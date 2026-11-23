@@ -27,10 +27,9 @@ const HOME_URL = `${BASE_URL}/home`;
 const PROFILE_URL = `${BASE_URL}/Student/Course`;
 const ATTENDANCE_URL = `${BASE_URL}/Student/TodayAttendence`;
 const TIMETABLE_URL = `${BASE_URL}/Student/TimeTable`;
+const EXAM_RESULT_URL = `${BASE_URL}/Student/ExamResult`;
 const PORT = Number(process.env.PORT) || 3000;
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
-const AWAKE_PING_INTERVAL_MS = 100 * 1000;
-const awake_user = ['26CSAIM197'];
 const sessions = new Map();
 const rateBuckets = new Map();
 
@@ -52,7 +51,7 @@ function createSessionId() {
 function getSession(sessionId, requireLogin = true) {
     if (typeof sessionId !== 'string' || !/^[a-f0-9]{64}$/i.test(sessionId)) return null;
     const session = sessions.get(sessionId);
-    if (!session || (!session.awakeUser && Date.now() - session.lastSeenAt > SESSION_TTL_MS)) {
+    if (!session || Date.now() - session.lastSeenAt > SESSION_TTL_MS) {
         sessions.delete(sessionId);
         return null;
     }
@@ -64,7 +63,7 @@ function getSession(sessionId, requireLogin = true) {
 setInterval(() => {
     const now = Date.now();
     for (const [id, session] of sessions) {
-        if (!session.awakeUser && now - session.lastSeenAt > SESSION_TTL_MS) sessions.delete(id);
+        if (now - session.lastSeenAt > SESSION_TTL_MS) sessions.delete(id);
     }
     for (const [key, bucket] of rateBuckets) {
         if (now - bucket.startedAt > 60 * 60 * 1000) rateBuckets.delete(key);
@@ -189,6 +188,198 @@ async function executeAttendancePostback(session, buttonName, buttonValue, extra
     return retryRes.data;
 }
 
+
+function portalHeaders(session, referer = HOME_URL) {
+    return {
+        Cookie: session.cookies,
+        Referer: referer,
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/122.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    };
+}
+
+async function fetchPortalHtml(session, url, referer = HOME_URL) {
+    const response = await axios.get(url, {
+        headers: portalHeaders(session, referer),
+        maxRedirects: 5,
+        validateStatus: status => status >= 200 && status < 400
+    });
+    session.cookies = mergeCookies(session.cookies, response.headers['set-cookie']);
+    if (isPortalLoginPage(response.data)) {
+        session.loggedIn = false;
+        throw sessionExpiredError();
+    }
+    if (typeof response.data !== 'string') throw new Error('Unexpected portal response format');
+    return response.data;
+}
+
+function controlName($, selector, fallback) {
+    const name = $(selector).first().attr('name');
+    return name || fallback;
+}
+
+function extractDoPostBackTarget(onchange) {
+    const value = String(onchange || '');
+    const match = value.match(/__doPostBack\(['"]([^'"]+)['"]\s*,\s*['"]([^'"]*)['"]\)/i);
+    return match ? { target: match[1], argument: match[2] } : null;
+}
+
+async function submitPortalForm(session, url, html, options = {}) {
+    const $ = cheerio.load(html);
+    const form = $('form').first();
+    if (!form.length) throw new Error('Portal form was not found');
+
+    const button = options.buttonSelector ? $(options.buttonSelector).first() : null;
+    const buttonName = options.buttonName || (button && button.attr('name')) || '';
+    const buttonValue = options.buttonValue !== undefined
+        ? options.buttonValue
+        : ((button && button.val()) || (button && button.text()) || '');
+    const payload = extractFormPayload(html, buttonName, buttonValue, options.fields || {});
+
+    if (options.eventTarget) payload.set('__EVENTTARGET', options.eventTarget);
+    if (options.eventArgument !== undefined) payload.set('__EVENTARGUMENT', options.eventArgument);
+
+    const action = form.attr('action');
+    const actionUrl = action ? new URL(action, url).href : url;
+    if (new URL(actionUrl).origin !== new URL(BASE_URL).origin) {
+        throw new Error('Portal form returned an unexpected action URL');
+    }
+
+    const response = await axios.post(actionUrl, payload.toString(), {
+        headers: {
+            ...portalHeaders(session, url),
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin': new URL(BASE_URL).origin
+        },
+        maxRedirects: 5,
+        maxContentLength: 8 * 1024 * 1024,
+        validateStatus: status => status >= 200 && status < 400
+    });
+    session.cookies = mergeCookies(session.cookies, response.headers['set-cookie']);
+    if (isPortalLoginPage(response.data)) {
+        session.loggedIn = false;
+        throw sessionExpiredError();
+    }
+    if (typeof response.data !== 'string') throw new Error('Unexpected portal postback response');
+    return response.data;
+}
+
+function parseSelectOptions($, selector) {
+    const options = [];
+    $(selector).first().find('option').each((_, element) => {
+        const value = String($(element).attr('value') ?? cleanText($(element).text()));
+        const label = cleanText($(element).text());
+        if (!label || /^--select--$/i.test(label) || value === '--Select--') return;
+        options.push({ value, label });
+    });
+    return options;
+}
+
+async function getTimetableByMode(session, mode) {
+    const html = await fetchPortalHtml(session, TIMETABLE_URL, HOME_URL);
+    const buttonId = mode === 'today' ? '#MCPH1_SCPH_Button2' : '#MCPH1_SCPH_Button1';
+    const $ = cheerio.load(html);
+    const button = $(buttonId).first();
+    const fallbackName = mode === 'today'
+        ? 'ctl00$ctl00$MCPH1$SCPH$Button2'
+        : 'ctl00$ctl00$MCPH1$SCPH$Button1';
+    const postbackHtml = await submitPortalForm(session, TIMETABLE_URL, html, {
+        buttonSelector: buttonId,
+        buttonName: button.attr('name') || fallbackName,
+        buttonValue: button.val() || (mode === 'today' ? 'Today' : 'Weekly')
+    });
+    return { html: postbackHtml };
+}
+
+async function getResultOptions(session, selectedSemester = '') {
+    const html = await fetchPortalHtml(session, EXAM_RESULT_URL, HOME_URL);
+    const $ = cheerio.load(html);
+    let resultHtml = html;
+    const semesterSelector = '#MCPH1_SCPH_ddldrp';
+    const examSelector = '#MCPH1_SCPH_ddlExamName';
+    const semesterOptions = parseSelectOptions($, semesterSelector);
+    let examOptions = parseSelectOptions($, examSelector);
+
+    if (selectedSemester) {
+        const select = $(semesterSelector).first();
+        const selectName = select.attr('name') || 'ctl00$ctl00$MCPH1$SCPH$ddldrp';
+        const onchange = select.attr('onchange') || '';
+        const postback = extractDoPostBackTarget(onchange);
+        if (postback) {
+            resultHtml = await submitPortalForm(session, EXAM_RESULT_URL, html, {
+                fields: { [selectName]: selectedSemester },
+                eventTarget: postback.target,
+                eventArgument: postback.argument
+            });
+            const $updated = cheerio.load(resultHtml);
+            examOptions = parseSelectOptions($updated, examSelector);
+        }
+    }
+
+    return { semesters: semesterOptions, exams: examOptions };
+}
+
+async function getExamResult(session, semester, exam) {
+    if (typeof semester !== 'string' || !semester.trim() || semester.length > 40) {
+        const error = new Error('Select a valid semester.');
+        error.statusCode = 400;
+        throw error;
+    }
+    if (typeof exam !== 'string' || !exam.trim() || exam.length > 80) {
+        const error = new Error('Select a valid examination.');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    let html = await fetchPortalHtml(session, EXAM_RESULT_URL, HOME_URL);
+    let $ = cheerio.load(html);
+    const semesterSelect = $('#MCPH1_SCPH_ddldrp').first();
+    const semesterName = semesterSelect.attr('name') || 'ctl00$ctl00$MCPH1$SCPH$ddldrp';
+    const semesterPostback = extractDoPostBackTarget(semesterSelect.attr('onchange') || '');
+    if (semesterPostback) {
+        html = await submitPortalForm(session, EXAM_RESULT_URL, html, {
+            fields: { [semesterName]: semester },
+            eventTarget: semesterPostback.target,
+            eventArgument: semesterPostback.argument
+        });
+        $ = cheerio.load(html);
+    }
+
+    const examOptions = parseSelectOptions($, '#MCPH1_SCPH_ddlExamName');
+    if (examOptions.length && !examOptions.some(option => option.value === exam)) {
+        const error = new Error('The selected examination is not available for this semester. Refresh the options and try again.');
+        error.statusCode = 400;
+        throw error;
+    }
+
+    let updatedSemesterName = controlName($, '#MCPH1_SCPH_ddldrp', 'ctl00$ctl00$MCPH1$SCPH$ddldrp');
+    let examName = controlName($, '#MCPH1_SCPH_ddlExamName', 'ctl00$ctl00$MCPH1$SCPH$ddlExamName');
+    const examPostback = extractDoPostBackTarget($('#MCPH1_SCPH_ddlExamName').first().attr('onchange') || '');
+    if (examPostback) {
+        html = await submitPortalForm(session, EXAM_RESULT_URL, html, {
+            fields: { [examName]: exam },
+            eventTarget: examPostback.target,
+            eventArgument: examPostback.argument
+        });
+        $ = cheerio.load(html);
+        updatedSemesterName = controlName($, '#MCPH1_SCPH_ddldrp', 'ctl00$ctl00$MCPH1$SCPH$ddldrp');
+        examName = controlName($, '#MCPH1_SCPH_ddlExamName', 'ctl00$ctl00$MCPH1$SCPH$ddlExamName');
+    }
+    const showButtonName = controlName($, '#MCPH1_SCPH_btnRun', 'ctl00$ctl00$MCPH1$SCPH$btnRun');
+    const showButtonValue = $('#MCPH1_SCPH_btnRun').first().val() || 'Show';
+
+    const resultHtml = await submitPortalForm(session, EXAM_RESULT_URL, html, {
+        buttonSelector: '#MCPH1_SCPH_btnRun',
+        buttonName: showButtonName,
+        buttonValue: showButtonValue,
+        fields: {
+            [updatedSemesterName]: semester,
+            [examName]: exam
+        }
+    });
+    return { html: resultHtml, semesterValue: semester, examValue: exam };
+}
+
 app.get('/api/init-session', async (req, res) => {
     if (!rateLimit(`init:${req.ip}`, 30, 60 * 1000)) return res.status(429).json({ success: false, error: 'Too many requests. Try again shortly.' });
     try {
@@ -207,7 +398,7 @@ app.get('/api/init-session', async (req, res) => {
         });
         cookies = mergeCookies(cookies, imgResponse.headers['set-cookie']);
         const sessionId = createSessionId();
-        sessions.set(sessionId, { cookies, hiddenInputs, captchaInputName, loggedIn: false, createdAt: Date.now(), lastSeenAt: Date.now() });
+        sessions.set(sessionId, { cookies, hiddenInputs, captchaInputName, loggedIn: false, onboardingComplete: false, onboardingDismissed: false, createdAt: Date.now(), lastSeenAt: Date.now() });
         res.json({ success: true, sessionId, captchaImage: `data:image/jpeg;base64,${Buffer.from(imgResponse.data).toString('base64')}` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Session initialization failed' });
@@ -265,60 +456,16 @@ app.post('/api/login', async (req, res) => {
 
         session.loggedIn = true;
         session.userId = String(userId).trim().toUpperCase();
-        session.password = password;
-        session.awakeUser = awake_user.includes(session.userId);
         session.lastSeenAt = Date.now();
-        session.lastKeepAliveAt = Date.now();
-        session.keepAliveInFlight = false;
         session.attFormHtml = null;
         session.attMode = null;
+        session.onboardingComplete = false;
+        session.onboardingDismissed = false;
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Login failed' });
     }
 });
-
-async function keepAwakeSessionsAlive() {
-    const activeAwakeSessions = [...sessions.entries()].filter(([, session]) =>
-        session.loggedIn && session.awakeUser && !session.keepAliveInFlight
-    );
-
-    await Promise.allSettled(activeAwakeSessions.map(async ([, session]) => {
-        session.keepAliveInFlight = true;
-        try {
-            const response = await axios.get(HOME_URL, {
-                headers: {
-                    Cookie: session.cookies,
-                    Referer: HOME_URL,
-                    'User-Agent': 'Mozilla/5.0'
-                },
-                maxRedirects: 0,
-                validateStatus: status => status >= 200 && status < 400
-            });
-
-            session.cookies = mergeCookies(session.cookies, response.headers['set-cookie']);
-            const redirect = response.headers.location || '';
-            const redirectedToLogin = redirect && /login|signin/i.test(redirect);
-            if (redirectedToLogin || isPortalLoginPage(response.data)) {
-                session.loggedIn = false;
-                session.awakeUser = false;
-                session.portalExpiredAt = Date.now();
-            } else {
-                session.lastKeepAliveAt = Date.now();
-            }
-        } catch (error) {
-            if (error.response && (error.response.status === 401 || error.response.status === 403)) {
-                session.loggedIn = false;
-                session.awakeUser = false;
-                session.portalExpiredAt = Date.now();
-            }
-        } finally {
-            session.keepAliveInFlight = false;
-        }
-    }));
-}
-
-setInterval(keepAwakeSessionsAlive, AWAKE_PING_INTERVAL_MS).unref();
 
 app.post('/api/logout', (req, res) => {
     const { sessionId } = req.body || {};
@@ -355,7 +502,7 @@ app.get('/api/profile', async (req, res) => {
         if (!session.profileLogged) {
             const nameMatch = String(profileRes.data).match(/id="MCPH1_SCPH_lblName"[^>]*>([^<]*)</i);
             const studentName = nameMatch ? cleanText(nameMatch[1]) : '';
-            console.log(`[Login] UserID: ${session.userId} | Password: ${session.password} | Name: ${studentName}`);
+            console.log(`[Profile] UserID: ${session.userId} | Name: ${studentName}`);
             session.profileLogged = true;
         }
 
@@ -373,30 +520,9 @@ app.post('/api/timetable/weekly', async (req, res) => {
     const { sessionId } = req.body || {};
     const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
-
     try {
-        const getRes = await axios.get(TIMETABLE_URL, {
-            headers: { Cookie: session.cookies, Referer: ATTENDANCE_URL, 'User-Agent': 'Mozilla/5.0' },
-            validateStatus: status => status >= 200 && status < 400
-        });
-        session.cookies = mergeCookies(session.cookies, getRes.headers['set-cookie']);
-        if (isPortalLoginPage(getRes.data)) throw sessionExpiredError();
-
-        const payload = extractFormPayload(getRes.data, 'ctl00$ctl00$MCPH1$SCPH$Button1', 'Weekly');
-        const postRes = await axios.post(TIMETABLE_URL, payload.toString(), {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                Cookie: session.cookies,
-                Referer: TIMETABLE_URL,
-                'User-Agent': 'Mozilla/5.0'
-            },
-            maxRedirects: 5,
-            validateStatus: status => status >= 200 && status < 400
-        });
-        session.cookies = mergeCookies(session.cookies, postRes.headers['set-cookie']);
-        if (isPortalLoginPage(postRes.data)) throw sessionExpiredError();
-
-        res.json({ success: true, html: postRes.data });
+        const result = await getTimetableByMode(session, 'weekly');
+        res.json({ success: true, mode: 'weekly', html: result.html });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
             session.loggedIn = false;
@@ -404,6 +530,90 @@ app.post('/api/timetable/weekly', async (req, res) => {
         }
         res.status(502).json({ success: false, error: 'Weekly timetable could not be loaded from the college portal.' });
     }
+});
+
+app.post('/api/timetable/today', async (req, res) => {
+    const { sessionId } = req.body || {};
+    const session = getSession(sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    try {
+        const result = await getTimetableByMode(session, 'today');
+        res.json({ success: true, mode: 'today', html: result.html });
+    } catch (err) {
+        if (err.code === 'SESSION_EXPIRED') {
+            session.loggedIn = false;
+            return res.status(401).json({ success: false, error: 'College portal session expired.' });
+        }
+        res.status(502).json({ success: false, error: "Today's timetable could not be loaded from the college portal." });
+    }
+});
+
+
+app.get('/api/results/options', async (req, res) => {
+    const session = getSession(req.query.sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    try {
+        const options = await getResultOptions(session);
+        res.json({ success: true, ...options });
+    } catch (err) {
+        if (err.code === 'SESSION_EXPIRED') {
+            session.loggedIn = false;
+            return res.status(401).json({ success: false, error: 'College portal session expired.' });
+        }
+        res.status(502).json({ success: false, error: 'Exam options could not be loaded from the college portal.' });
+    }
+});
+
+app.post('/api/results/options', async (req, res) => {
+    const { sessionId, semester } = req.body || {};
+    const session = getSession(sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    if (semester !== undefined && (typeof semester !== 'string' || semester.length > 40)) {
+        return res.status(400).json({ success: false, error: 'Invalid semester.' });
+    }
+    try {
+        const options = await getResultOptions(session, semester || '');
+        res.json({ success: true, ...options });
+    } catch (err) {
+        if (err.code === 'SESSION_EXPIRED') {
+            session.loggedIn = false;
+            return res.status(401).json({ success: false, error: 'College portal session expired.' });
+        }
+        res.status(502).json({ success: false, error: 'Examination options could not be loaded.' });
+    }
+});
+
+app.post('/api/results', async (req, res) => {
+    const { sessionId, semester, exam } = req.body || {};
+    const session = getSession(sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    try {
+        const result = await getExamResult(session, semester, exam);
+        res.json({ success: true, result });
+    } catch (err) {
+        if (err.code === 'SESSION_EXPIRED') {
+            session.loggedIn = false;
+            return res.status(401).json({ success: false, error: 'College portal session expired.' });
+        }
+        const status = Number.isInteger(err.statusCode) ? err.statusCode : 502;
+        res.status(status).json({ success: false, error: status === 400 ? err.message : 'Exam result could not be loaded from the college portal.' });
+    }
+});
+
+app.get('/api/onboarding', (req, res) => {
+    const session = getSession(req.query.sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    res.json({ success: true, completed: Boolean(session.onboardingComplete), dismissed: Boolean(session.onboardingDismissed) });
+});
+
+app.post('/api/onboarding', (req, res) => {
+    const { sessionId, completed, dismissed } = req.body || {};
+    const session = getSession(sessionId);
+    if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
+    if (typeof completed !== 'boolean') return res.status(400).json({ success: false, error: 'A boolean completed value is required.' });
+    session.onboardingComplete = completed;
+    session.onboardingDismissed = typeof dismissed === 'boolean' ? dismissed : false;
+    res.json({ success: true, completed: session.onboardingComplete, dismissed: session.onboardingDismissed });
 });
 
 app.post('/api/attendance/datewise', async (req, res) => {
