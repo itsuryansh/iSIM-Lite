@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GLBAJAJ Student Dashboard</title>
     <link rel="icon" href="https://www.glbitm.org/images/favicon.png" type="image/png">
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ADLaM+Display&family=DynaPuff:wght@400;500;600;700&family=Figtree:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&family=Nunito:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&family=Quicksand:wght@400;500;600;700&family=Rubik:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #4f46e5; --primary-hover: #4338ca;
+            --primary: #4f46e5; --primary-hover: #4338ca; --app-font: 'ADLaM Display';
             --bg-color: #f1f5f9; --card-bg: #ffffff;
             --text-dark: #0f172a; --text-muted: #64748b;
             --border-radius: 16px; --input-radius: 12px;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family:var(--app-font),sans-serif; }
         body { background: var(--bg-color); color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column;}
         
         .page-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(255,255,255,0.85); backdrop-filter: blur(8px); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
@@ -139,7 +141,7 @@
         .filter-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 25px; align-items: center; justify-content: center; background: #f8fafc; padding: 18px 24px; border-radius: 12px; border: 1px solid #e2e8f0; }
         .date-input-group { display: flex; align-items: center; gap: 10px; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px; transition: 0.3s; }
         .date-input-group:focus-within { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79,70,229,0.1); }
-        .date-input-group input { border: none; outline: none; padding: 0; font-family: 'Outfit'; font-size: 15px; color: var(--text-dark); background: transparent; font-weight: 500;}
+        .date-input-group input { border: none; outline: none; padding: 0; font-family:var(--app-font),sans-serif; font-size: 15px; color: var(--text-dark); background: transparent; font-weight: 500;}
         .btn-small { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: 0.2s;}
         .btn-small:hover { background: var(--primary-hover); transform: translateY(-1px); }
 
@@ -273,7 +275,485 @@
             .theme-trigger-btn { width: 34px; height: 34px; }
             .theme-popover { right: -42px; width: 214px; padding: 12px; }
         }
-    </style>
+
+        .feature-card { min-height:360px; }
+        .feature-heading { display:flex; justify-content:space-between; align-items:center; gap:18px; margin-bottom:24px; }
+        .feature-heading h2 { font-size:27px; font-weight:800; margin:4px 0 6px; }
+        .feature-heading p { color:var(--text-muted); font-size:14px; }
+        .feature-eyebrow { color:var(--primary); letter-spacing:1.1px; font-size:11px; font-weight:800; }
+        .feature-icon { width:54px; height:54px; border-radius:16px; display:grid; place-items:center; background:#e0e7ff; color:var(--primary); font-size:27px; font-weight:800; flex:0 0 auto; }
+        .feature-filter-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)) auto; align-items:end; gap:14px; background:#f8fafc; border:1px solid #e2e8f0; padding:18px; border-radius:14px; }
+        .feature-field { display:flex; flex-direction:column; gap:7px; font-size:12px; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:.45px; min-width:0; }
+        .feature-field select { width:100%; min-height:44px; border:1px solid #cbd5e1; border-radius:10px; background:#fff; color:#0f172a; padding:0 12px; font:600 14px var(--app-font),sans-serif; outline:none; }
+        .feature-field select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+        .feature-action { min-height:44px; justify-content:center; white-space:nowrap; }
+        .feature-message { color:var(--text-muted); font-size:14px; font-weight:600; padding:20px 4px; text-align:center; }
+        .feature-message.error { color:#dc2626; }
+        .feature-toggle-row { display:flex; gap:10px; justify-content:center; margin:4px 0 12px; }
+        .timetable-day { margin:18px 0; }
+        .timetable-day h3 { font-size:16px; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+        .timetable-day-count { font-size:11px; color:var(--text-muted); background:#f1f5f9; padding:3px 8px; border-radius:20px; }
+        .timetable-list { display:grid; gap:10px; }
+        .timetable-class { display:grid; grid-template-columns:minmax(110px,.75fr) minmax(0,2fr) minmax(120px,.9fr); gap:14px; align-items:center; padding:15px; border:1px solid #e2e8f0; border-radius:13px; background:#fff; }
+        .timetable-time { color:var(--primary); font-weight:800; font-size:13px; }
+        .timetable-subject { font-weight:800; font-size:15px; color:#0f172a; }
+        .timetable-meta { color:var(--text-muted); font-size:12px; margin-top:4px; line-height:1.5; }
+        .timetable-room { justify-self:end; text-align:right; color:var(--text-muted); font-size:12px; font-weight:700; }
+        .tour-backdrop { position:fixed; inset:0; z-index:12000; background:rgba(15,23,42,.58); display:flex; align-items:center; justify-content:center; padding:18px; backdrop-filter:blur(5px); }
+        .tour-backdrop.hidden { display:none !important; }
+        .tour-card { position:relative; width:min(100%,430px); border-radius:22px; padding:28px; background:var(--card-bg); color:var(--text-dark); box-shadow:0 25px 80px rgba(0,0,0,.25); }
+        .tour-kicker { color:var(--primary); font-weight:900; letter-spacing:1px; font-size:11px; }
+        .tour-step { position:absolute; right:26px; top:25px; color:var(--text-muted); font-size:12px; font-weight:800; }
+        .tour-card h2 { font-size:23px; line-height:1.2; margin:16px 0 10px; }
+        .tour-card p { color:var(--text-muted); font-size:14px; line-height:1.6; min-height:48px; }
+        .tour-progress { height:5px; background:#e2e8f0; border-radius:9px; overflow:hidden; margin:22px 0; }
+        .tour-progress span { display:block; width:25%; height:100%; background:var(--primary); transition:width .25s ease; }
+        .tour-actions { display:flex; justify-content:space-between; align-items:center; }
+        .tour-skip { border:0; background:transparent; color:var(--text-muted); font:700 13px var(--app-font),sans-serif; cursor:pointer; padding:9px 12px; }
+        body.dark-mode .feature-filter-grid { background:#1e293b; border-color:#334155; }
+        body.dark-mode .feature-field select { background:#0f172a; border-color:#334155; color:#f1f5f9; }
+        body.dark-mode .timetable-class { border-color:#334155; }
+        body.dark-mode .timetable-class { background:#111827; }
+        body.dark-mode .timetable-subject { color:#f1f5f9; }
+        @media(max-width:760px) { .feature-filter-grid { grid-template-columns:1fr; } .feature-action { width:100%; } .timetable-class { grid-template-columns:1fr; gap:7px; } .timetable-room { justify-self:start; text-align:left; } .feature-heading h2 { font-size:23px; } .feature-icon { width:44px; height:44px; } }
+        @media(max-width:540px) { .nav-tabs { overflow-x:auto; min-width:0; } .nav-tab { padding:8px 9px; } .nav-tab span { display:none; } .feature-card { padding:16px; } .tour-card { padding:24px 21px; } }
+
+
+        /* Refined navigation: the circular student photo is the Profile tab. */
+        .top-nav { gap: 18px; }
+        .nav-tabs { flex: 1 1 auto; justify-content: center; min-width: 0; }
+        .top-nav-right { flex: 0 0 auto; gap: 10px; }
+        button.top-profile-badge { appearance:none; -webkit-appearance:none; padding:0; width:44px; height:44px; min-width:44px; border:2px solid #e2e8f0; border-radius:50%; background:#f8fafc; display:grid; place-items:center; cursor:pointer; overflow:hidden; transition:border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+        button.top-profile-badge:hover { border-color:var(--primary); transform:translateY(-1px); }
+        button.top-profile-badge.active { border-color:var(--primary); box-shadow:0 0 0 4px rgba(79,70,229,.14); }
+        .top-profile-avatar { width:100%; height:100%; display:grid; place-items:center; border-radius:50%; background:#eef2ff; overflow:hidden; }
+        .top-profile-avatar svg { width:23px; height:23px; color:var(--primary); }
+        .top-profile-avatar img { display:block; width:100%; height:100%; object-fit:cover; }
+        body.dark-mode button.top-profile-badge { background:#1e293b; border-color:#334155; }
+        body.dark-mode button.top-profile-badge.active { border-color:var(--primary); }
+
+        /* Animated option-box selectors for semester and examination. */
+        .result-picker { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto; gap:16px; align-items:end; padding:18px; border:1px solid #e2e8f0; border-radius:16px; background:#f8fafc; }
+        .result-option-group { min-width:0; }
+        .result-option-heading { display:flex; align-items:baseline; justify-content:space-between; gap:8px; margin:0 2px 9px; color:var(--text-dark); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.45px; }
+        .result-option-heading small { color:var(--text-muted); font-size:10px; font-weight:600; text-transform:none; letter-spacing:0; }
+        .option-rail { position:relative; display:flex; align-items:center; gap:5px; width:100%; min-height:48px; padding:4px; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; border:1px solid #e2e8f0; border-radius:13px; background:#fff; -webkit-overflow-scrolling:touch; }
+        .option-rail::-webkit-scrollbar { display:none; }
+        .option-indicator { position:absolute; z-index:0; left:0; top:4px; bottom:4px; width:0; border-radius:9px; background:var(--primary); box-shadow:0 5px 14px rgba(79,70,229,.22); opacity:0; pointer-events:none; transition:transform .32s cubic-bezier(.2,.8,.2,1), width .32s cubic-bezier(.2,.8,.2,1), opacity .18s ease; }
+        .option-rail.has-selection .option-indicator { opacity:1; }
+        .option-chip { position:relative; z-index:1; flex:0 0 auto; min-height:38px; padding:8px 15px; border:0; border-radius:9px; background:transparent; color:var(--text-muted); font:700 13px var(--app-font),sans-serif; white-space:nowrap; cursor:pointer; transition:color .2s ease, transform .2s ease; -webkit-tap-highlight-color:transparent; }
+        .option-chip:hover { color:var(--primary); }
+        .option-chip:active { transform:scale(.96); }
+        .option-chip.active { color:#fff; }
+        .option-chip:focus-visible { outline:2px solid var(--primary); outline-offset:2px; }
+        .option-placeholder { display:block; width:100%; padding:8px 12px; color:var(--text-muted); font-size:12px; font-weight:600; white-space:nowrap; }
+        .option-rail.is-disabled { opacity:.62; background:#f1f5f9; pointer-events:none; }
+        .result-picker .feature-action { min-height:48px; gap:8px; }
+        .result-picker .feature-action svg { width:18px; height:18px; }
+        .result-picker .feature-action:disabled { opacity:.48; cursor:not-allowed; transform:none; box-shadow:none; }
+        body.dark-mode .result-picker { background:#1e293b; border-color:#334155; }
+        body.dark-mode .option-rail { background:#0f172a; border-color:#334155; }
+        body.dark-mode .option-rail.is-disabled { background:#1e293b; }
+
+        /* Compact subject-only result table. */
+        .result-empty { padding:28px 16px; text-align:center; color:var(--text-muted); font-weight:600; }
+
+        /* One-week cache with a date-style previous/next day navigator. */
+        .tt-day-navigator { display:grid; grid-template-columns:46px minmax(0,1fr) 46px; align-items:center; gap:12px; max-width:560px; margin:8px auto 14px; padding:10px; border:1px solid #e2e8f0; border-radius:16px; background:#f8fafc; }
+        .tt-day-arrow { width:42px; height:42px; border:1px solid #dbe2ed; border-radius:12px; display:grid; place-items:center; color:var(--primary); background:#fff; cursor:pointer; transition:transform .18s ease, background .18s ease, border-color .18s ease; }
+        .tt-day-arrow:hover { background:#eef2ff; border-color:var(--primary); }
+        .tt-day-arrow:active { transform:scale(.92); }
+        .tt-day-arrow svg { width:21px; height:21px; }
+        .tt-day-current { display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:4px 10px; min-width:0; text-align:center; }
+        .tt-day-current strong { color:var(--text-dark); font-size:17px; font-weight:800; }
+        .tt-day-current span:not(.tt-today-badge) { color:var(--text-muted); font-size:12px; font-weight:600; }
+        .tt-today-badge { padding:4px 8px; border-radius:20px; background:#dcfce7; color:#15803d; font-size:9px; font-weight:900; letter-spacing:.5px; }
+        .tt-today-badge[hidden] { display:none; }
+        .timetable-day { margin:12px 0 0; }
+        .timetable-day h3 { display:flex; flex-wrap:wrap; align-items:center; gap:9px; margin:0 0 12px; color:var(--text-dark); font-size:16px; }
+        .timetable-day-count { padding:4px 9px; border-radius:20px; background:#eef2ff; color:var(--primary); font-size:10px; font-weight:800; }
+        .timetable-list { display:grid; gap:9px; }
+        .timetable-class { display:grid; grid-template-columns:minmax(108px,.68fr) minmax(0,2fr) minmax(92px,.55fr); gap:14px; align-items:center; padding:15px 16px; border:1px solid #e2e8f0; border-radius:13px; background:#fff; transition:border-color .18s ease,transform .18s ease,box-shadow .18s ease; }
+        .timetable-class:hover { border-color:#c7d2fe; box-shadow:0 5px 16px rgba(15,23,42,.05); transform:translateY(-1px); }
+        .timetable-time { color:var(--primary); font-size:12px; font-weight:900; line-height:1.4; }
+        .timetable-subject { color:#0f172a; font-size:14px; font-weight:800; line-height:1.35; overflow-wrap:anywhere; }
+        .timetable-meta { margin-top:4px; color:var(--text-muted); font-size:11px; font-weight:600; line-height:1.4; overflow-wrap:anywhere; }
+        .timetable-room { justify-self:end; text-align:right; color:var(--text-muted); font-size:11px; font-weight:800; }
+        body.dark-mode .tt-day-navigator { background:#1e293b; border-color:#334155; }
+        body.dark-mode .tt-day-arrow { background:#0f172a; border-color:#334155; }
+        body.dark-mode .tt-day-arrow:hover { background:#263349; }
+        body.dark-mode .tt-day-current strong { color:#f1f5f9; }
+        body.dark-mode .timetable-day-count { background:rgba(79,70,229,.18); }
+        body.dark-mode .timetable-class { background:#111827; border-color:#334155; }
+        body.dark-mode .timetable-subject { color:#f1f5f9; }
+
+        /* Guided multi-step feature tour; only the reference tour flow and styling are reused. */
+        .tour-overlay { position:fixed; inset:0; z-index:9500; background:rgba(15,23,42,.58); backdrop-filter:blur(2px); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .25s ease,visibility .25s ease; }
+        .tour-overlay.active { opacity:1; visibility:visible; pointer-events:auto; }
+        .top-nav.tour-elevated { z-index:9501 !important; }
+        .tour-highlight-target { position:relative !important; z-index:9502 !important; box-shadow:0 0 0 4px var(--primary),0 0 0 10px rgba(79,70,229,.28) !important; border-radius:12px; transition:box-shadow .25s ease; }
+        .tour-popover { position:fixed; z-index:9505; width:320px; max-width:calc(100vw - 24px); background:var(--card-bg); color:var(--text-dark); border:2px solid var(--primary); border-radius:16px; padding:18px 20px; box-shadow:0 20px 50px rgba(0,0,0,.3); opacity:0; visibility:hidden; pointer-events:none; transition:opacity .22s ease,transform .22s ease,visibility .22s ease; transform:translateY(7px); }
+        .tour-popover.active { opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+        .tour-step-badge { display:inline-block; margin-bottom:8px; padding:4px 10px; border-radius:100px; background:#e0e7ff; color:var(--primary); font-size:10px; font-weight:900; letter-spacing:.4px; text-transform:uppercase; }
+        .tour-popover h4 { margin:0 0 6px; color:var(--text-dark); font-size:17px; font-weight:800; }
+        .tour-popover p { margin:0 0 16px; color:var(--text-muted); font-size:13px; font-weight:500; line-height:1.5; }
+        .tour-actions { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+        .tour-btn-skip { padding:7px 8px; border:0; background:transparent; color:var(--text-muted); font:700 12px var(--app-font),sans-serif; cursor:pointer; }
+        .tour-btn-skip:hover { color:#ef4444; }
+        .tour-nav-group { display:flex; gap:8px; }
+        .tour-btn-sec,.tour-btn-pri { padding:8px 14px; border:0; border-radius:8px; font:700 12px var(--app-font),sans-serif; cursor:pointer; }
+        .tour-btn-sec { background:#f1f5f9; color:var(--text-dark); }
+        .tour-btn-pri { background:var(--primary); color:#fff; }
+        body.dark-mode .tour-popover { background:#111827; border-color:#334155; }
+        body.dark-mode .tour-btn-sec { background:#1e293b; color:#f1f5f9; }
+        @media(max-width:900px) {
+            .result-picker { grid-template-columns:1fr 1fr; }
+            .result-picker .feature-action { grid-column:1/-1; width:100%; }
+        }
+        @media(max-width:760px) {
+            .top-nav { gap:8px; }
+            .top-nav-right { gap:6px; }
+            button.top-profile-badge { width:40px; height:40px; min-width:40px; }
+            .result-picker { grid-template-columns:1fr; gap:13px; padding:13px; }
+            .result-picker .feature-action { grid-column:auto; }
+            .tt-day-navigator { max-width:100%; gap:8px; padding:8px; }
+            .timetable-class { grid-template-columns:1fr; gap:7px; padding:13px; }
+            .timetable-room { justify-self:start; text-align:left; }
+            .tour-popover { width:min(320px,calc(100vw - 24px)); }
+        }
+        @media(max-width:540px) {
+            .top-nav { padding:0 8px; }
+            .top-nav-right { gap:4px; }
+            .nav-tabs { gap:3px; }
+            .nav-tab { padding:8px 8px; }
+            .nav-tab span { display:none; }
+            button.top-profile-badge { width:36px; height:36px; min-width:36px; }
+            .logout-btn { padding:7px 8px; }
+            .tt-day-current strong { font-size:15px; }
+            .tt-day-arrow { width:38px; height:38px; }
+            .tour-popover { padding:16px; }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .option-indicator,.option-chip,.tour-overlay,.tour-popover,.tt-day-arrow,.timetable-class { transition:none !important; }
+        }
+
+
+
+        /* Global typography and high-contrast controls. */
+        html, body, body *, body *::before, body *::after, button, input, select, textarea, option, ::placeholder { font-family:var(--app-font),sans-serif !important; }
+        .tour-replay-trigger { cursor:pointer; border-radius:12px; padding:4px 7px 4px 2px; margin-left:-2px; transition:background .2s ease,transform .2s ease; }
+        .tour-replay-trigger:hover { background:rgba(79,70,229,.07); transform:translateY(-1px); }
+        .tour-replay-trigger:focus-visible { outline:3px solid var(--primary); outline-offset:3px; }
+        .att-btn { background:var(--card-bg); color:var(--text-dark); border-color:#cbd5e1; box-shadow:0 2px 7px rgba(15,23,42,.045); }
+        .att-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        .att-btn:hover:not(.active) { background:#eef2ff; color:var(--primary); border-color:var(--primary); }
+        body.dark-mode .att-btn { background:#1e293b; color:#e2e8f0; border-color:#475569; }
+        body.dark-mode .att-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+        body.dark-mode .att-btn:hover:not(.active) { background:#26354b; color:#c7d2fe; border-color:var(--primary); }
+        .option-rail { background:#fff; border:1px solid #cbd5e1; box-shadow:inset 0 1px 2px rgba(15,23,42,.04); }
+        .option-chip { border:1px solid #dbe2ed; background:#f8fafc; color:#334155; box-shadow:0 1px 2px rgba(15,23,42,.035); }
+        .option-chip:hover { background:#eef2ff; border-color:#a5b4fc; color:var(--primary); }
+        .option-chip.active { border-color:var(--primary); background:transparent; color:#fff; box-shadow:0 2px 7px rgba(79,70,229,.2); }
+        .option-rail.has-selection .option-indicator { box-shadow:0 4px 12px rgba(79,70,229,.22); }
+        body.dark-mode .option-chip { background:#1e293b; border-color:#475569; color:#e2e8f0; }
+        body.dark-mode .option-chip:hover { background:#29364d; border-color:#818cf8; color:#c7d2fe; }
+        body.dark-mode .option-chip.active { color:#fff; background:transparent; }
+        .tt-day-navigator { grid-template-columns:44px minmax(0,1fr) 44px; max-width:420px; padding:7px; gap:10px; border-radius:15px; }
+        .tt-day-current { min-height:42px; }
+        .tt-day-current strong { font-size:19px; letter-spacing:.2px; }
+        .timetable-day h3 { display:none; }
+        /* Minimal subject-wise result gauges, matching Attendance Analytics. */
+        .result-marks-heading { display:flex; align-items:center; justify-content:space-between; gap:8px 14px; flex-wrap:wrap; margin:18px 0 12px; }
+        .result-marks-heading h3 { color:var(--text-dark); font-size:15px; font-weight:750; }
+        .result-marks-summary { color:var(--text-muted); font-size:11px; font-weight:600; }
+        .result-subject-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(205px,1fr)); gap:10px; }
+        .result-subject-card { min-width:0; padding:14px 10px 12px; border:1px solid #e5eaf0; border-radius:13px; background:#f8fafc; box-shadow:none; transition:border-color .18s ease,background .18s ease; }
+        .result-subject-card.pass { background:#f7fbf8; border-color:#e0ebe3; }
+        .result-subject-card.below { background:#fff9f8; border-color:#f0e3e1; }
+        .result-subject-card.neutral { background:#f8fafc; border-color:#e5eaf0; }
+        .result-subject-name { min-height:34px; margin:0 2px 10px; color:var(--text-dark); font-size:12px; font-weight:750; line-height:1.35; overflow-wrap:anywhere; text-align:center; }
+        .result-gauge-pair { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:3px; align-items:start; justify-items:center; }
+        .result-gauge-block { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:5px; min-width:0; width:100%; text-align:center; }
+        .result-gauge { width:80px; height:80px; position:relative; flex:0 0 auto; }
+        .result-gauge svg { display:block; width:100%; height:100%; transform:rotate(-90deg); overflow:visible; }
+        .result-gauge-track { fill:none; stroke:#e8edf5; stroke-width:8; }
+        .result-gauge-ring { fill:none; stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .9s cubic-bezier(.4,0,.2,1); }
+        .result-gauge-center { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-dark); text-align:center; }
+        .result-gauge-center strong { font-size:16px; line-height:1; font-weight:750; font-variant-numeric:tabular-nums; }
+        .result-gauge-label { color:var(--text-muted); font-size:10px; font-weight:700; line-height:1.2; text-align:center; }
+        .result-gauge-value { color:var(--text-dark); font-size:10px; font-weight:650; text-align:center; font-variant-numeric:tabular-nums; }
+        .result-total-panel { display:flex; align-items:center; justify-content:space-between; gap:18px; margin-top:13px; padding:14px 17px; border:1px solid #e2e8f0; border-radius:14px; background:#f8fafc; }
+        .result-total-copy { min-width:0; display:flex; flex-direction:column; gap:4px; }
+        .result-total-kicker { color:var(--primary); font-size:10px; font-weight:800; letter-spacing:.75px; text-transform:uppercase; }
+        .result-total-copy h3 { color:var(--text-dark); font-size:15px; font-weight:750; }
+        .result-total-copy strong { color:var(--text-dark); font-size:19px; line-height:1.25; font-weight:800; font-variant-numeric:tabular-nums; }
+        .result-total-copy p,.result-total-copy small { color:var(--text-muted); font-size:11px; font-weight:600; line-height:1.4; }
+        .result-total-gauge { width:82px; height:82px; }
+        body.dark-mode .result-subject-card { background:#172131; border-color:#334155; box-shadow:none; }
+        body.dark-mode .result-subject-card.pass { background:rgba(34,197,94,.055); border-color:rgba(34,197,94,.2); }
+        body.dark-mode .result-subject-card.below { background:rgba(239,68,68,.055); border-color:rgba(239,68,68,.2); }
+        body.dark-mode .result-subject-card.neutral { background:#172131; border-color:#334155; }
+        body.dark-mode .result-subject-name,body.dark-mode .result-gauge-center strong,body.dark-mode .result-gauge-value,body.dark-mode .result-total-copy h3,body.dark-mode .result-total-copy strong { color:#f1f5f9; }
+        body.dark-mode .result-gauge-track { stroke:#334155; }
+        body.dark-mode .result-total-panel { background:#172131; border-color:#334155; }
+        @media(max-width:540px) {
+            .result-subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+            .result-subject-card { padding:12px 6px 10px; }
+            .result-subject-name { font-size:11px; min-height:32px; }
+            .result-gauge { width:72px; height:72px; }
+            .result-gauge-center strong { font-size:14px; }
+            .result-gauge-label,.result-gauge-value { font-size:9px; }
+            .result-total-panel { padding:12px; gap:10px; }
+            .result-total-gauge { width:74px; height:74px; }
+            .result-total-copy strong { font-size:17px; }
+            .tt-day-navigator { max-width:100%; }
+            .tt-day-current strong { font-size:17px; }
+        }
+        @media(prefers-reduced-motion:reduce) { .result-gauge-ring { transition:none; } }
+
+
+        /* Shared date/day navigation: same geometry, buttons and surfaces. */
+        .date-navigation-control,.tt-day-navigator {
+            display:grid; grid-template-columns:42px minmax(0,1fr) 42px; align-items:center; gap:9px;
+            width:min(100%,420px); margin:8px auto 15px; padding:7px;
+            border:1px solid #e2e8f0; border-radius:15px; background:#f8fafc;
+        }
+        .date-nav-arrow,.tt-day-arrow {
+            width:42px; height:42px; display:grid; place-items:center; padding:0;
+            border:1px solid #dbe2ed; border-radius:12px; background:#fff; color:var(--primary);
+            cursor:pointer; transition:background .18s ease,border-color .18s ease,transform .18s ease;
+        }
+        .date-nav-arrow:hover:not(:disabled),.tt-day-arrow:hover { background:#eef2ff; border-color:var(--primary); }
+        .date-nav-arrow:active,.tt-day-arrow:active { transform:scale(.94); }
+        .date-nav-arrow:disabled { opacity:.42; cursor:not-allowed; }
+        .date-nav-arrow svg,.tt-day-arrow svg { width:20px; height:20px; }
+        .date-navigation-current {
+            position:relative; min-width:0; min-height:42px; display:flex; align-items:center; justify-content:center;
+            gap:8px; padding:6px 10px; border:1px solid #e2e8f0; border-radius:11px; background:#fff;
+            cursor:pointer; user-select:none; overflow:hidden;
+        }
+        .date-navigation-current input { position:absolute; inset:0; width:100%; height:100%; opacity:0; cursor:pointer; border:0; }
+        #selectedDateText { color:var(--text-dark); font-size:14px; font-weight:800; white-space:nowrap; }
+        .date-nav-badge { display:inline-flex; align-items:center; justify-content:center; min-width:34px; padding:3px 7px; border-radius:20px; background:#eef2ff; color:var(--primary); font-size:10px; font-weight:800; }
+        .tt-day-navigator { max-width:420px; }
+        .tt-day-current { min-width:0; min-height:42px; display:flex; align-items:center; justify-content:center; text-align:center; }
+        .tt-day-current strong { color:var(--text-dark); font-size:17px; font-weight:800; }
+        body.dark-mode .date-navigation-control,body.dark-mode .tt-day-navigator { background:#1e293b; border-color:#334155; }
+        body.dark-mode .date-nav-arrow,body.dark-mode .tt-day-arrow { background:#0f172a; border-color:#334155; }
+        body.dark-mode .date-navigation-current { background:#0f172a; border-color:#334155; }
+        body.dark-mode #selectedDateText,body.dark-mode .tt-day-current strong { color:#f1f5f9; }
+        body.dark-mode .date-nav-badge { background:rgba(99,102,241,.2); }
+
+        /* Compact, automatic exam marks: one obtained circle per subject. */
+        .result-picker { grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; padding:0; border:0; border-radius:0; background:transparent; }
+        .result-option-heading { margin:0 2px 7px; font-size:11px; letter-spacing:.35px; }
+        .result-option-heading small { display:none; }
+        .option-rail { min-height:44px; padding:3px; border-radius:11px; }
+        .option-chip { min-height:36px; padding:7px 12px; }
+        .result-message { display:none; }
+        .result-subject-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-top:14px; }
+        .result-subject-card { min-width:0; min-height:0; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:9px; padding:13px 9px 12px; border:1px solid #e5eaf0; border-radius:13px; background:transparent; box-shadow:none; }
+        .result-subject-card.pass,.result-subject-card.below,.result-subject-card.neutral { background:transparent; border-color:#e5eaf0; }
+        .result-subject-name { order:2; width:100%; min-height:0; margin:0; color:var(--text-dark); font-size:12px; font-weight:700; line-height:1.3; overflow-wrap:anywhere; text-align:center; }
+        .result-gauge { width:78px; height:78px; position:relative; flex:0 0 auto; }
+        .result-gauge svg { width:100%; height:100%; display:block; transform:rotate(-90deg); overflow:visible; }
+        .result-gauge-track { fill:none; stroke:#e8edf5; stroke-width:8; }
+        .result-gauge-ring { fill:none; stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .7s ease; }
+        .result-gauge-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; color:var(--text-dark); }
+        .result-gauge-center strong { color:var(--text-dark); font-size:17px; font-weight:800; line-height:1; font-variant-numeric:tabular-nums; }
+        .result-gauge-center small { color:var(--text-muted); font-size:9px; font-weight:700; line-height:1; }
+        body.dark-mode .result-subject-card,body.dark-mode .result-subject-card.pass,body.dark-mode .result-subject-card.below,body.dark-mode .result-subject-card.neutral { background:transparent; border-color:#334155; }
+        body.dark-mode .result-gauge-track { stroke:#334155; }
+        body.dark-mode .result-subject-name,body.dark-mode .result-gauge-center strong { color:#f1f5f9; }
+
+        /* Live timetable status and elapsed-time fill. */
+        .timetable-class { position:relative; overflow:hidden; }
+        .timetable-time-wrap { display:flex; align-items:center; gap:8px; flex-wrap:wrap; min-width:0; }
+        .timetable-status { display:inline-flex; align-items:center; justify-content:center; padding:3px 7px; border-radius:20px; font-size:9px; font-weight:900; letter-spacing:.25px; line-height:1.2; }
+        .timetable-status.current { color:#047857; background:rgba(16,185,129,.13); }
+        .timetable-status.next { color:var(--primary); background:color-mix(in srgb,var(--primary) 12%,transparent); }
+        .timetable-status.done { color:var(--text-muted); background:rgba(100,116,139,.12); }
+        .timetable-class.is-current { background:linear-gradient(90deg,color-mix(in srgb,#10b981 13%,var(--card-bg)) 0 var(--class-progress,100%),var(--card-bg) var(--class-progress,100%) 100%); border-color:rgba(16,185,129,.5); }
+        .timetable-class.is-next { background:color-mix(in srgb,var(--primary) 7%,var(--card-bg)); border-color:color-mix(in srgb,var(--primary) 42%,#e2e8f0); }
+        .timetable-class.is-done { opacity:.62; }
+        .timetable-class.is-done .timetable-subject { font-weight:650; }
+        body.dark-mode .timetable-class.is-current { background:linear-gradient(90deg,rgba(16,185,129,.17) 0 var(--class-progress,100%),#111827 var(--class-progress,100%) 100%); border-color:rgba(52,211,153,.35); }
+        body.dark-mode .timetable-class.is-next { background:color-mix(in srgb,var(--primary) 12%,#111827); border-color:color-mix(in srgb,var(--primary) 52%,#334155); }
+        body.dark-mode .timetable-status.current { color:#6ee7b7; background:rgba(16,185,129,.16); }
+        body.dark-mode .timetable-status.done { color:#94a3b8; background:rgba(148,163,184,.12); }
+
+        /* Font style picker inside Appearance. */
+        .theme-popover { width:250px; max-height:min(78vh,560px); overflow-y:auto; }
+        .font-picker-label { display:flex; flex-direction:column; gap:6px; color:var(--text-muted); font-size:11px; font-weight:800; }
+        .font-picker-label select { width:100%; min-height:38px; padding:7px 10px; border:1px solid #cbd5e1; border-radius:9px; outline:none; background:#fff; color:#0f172a; font-size:13px; font-weight:700; }
+        .font-picker-label select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.12); }
+        body.dark-mode .font-picker-label select { background:#0f172a; border-color:#334155; color:#f1f5f9; }
+        @media(max-width:540px) { .theme-popover { right:-34px; width:min(238px,calc(100vw - 18px)); } }
+        @media(max-width:760px) {
+            .result-picker { grid-template-columns:1fr; }
+            .date-navigation-control,.tt-day-navigator { max-width:100%; gap:7px; }
+            .date-nav-arrow,.tt-day-arrow { width:40px; height:40px; }
+            .result-subject-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+            .result-subject-card { padding:11px 6px; }
+            .result-gauge { width:72px; height:72px; }
+            .result-gauge-center strong { font-size:15px; }
+            .result-subject-name { font-size:11px; }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .timetable-class,.result-gauge-ring,.date-nav-arrow,.tt-day-arrow { transition:none !important; }
+        }
+
+    
+
+        /* Final responsive polish: compact navigation and mobile-friendly attendance modes. */
+        @media (max-width: 640px) {
+            .att-tabs {
+                display:grid;
+                grid-template-columns:repeat(2,minmax(0,1fr));
+                gap:8px;
+                width:100%;
+                margin-bottom:16px;
+            }
+            .att-tabs .att-btn {
+                width:100%; min-width:0; min-height:44px;
+                padding:8px 7px; white-space:normal;
+                display:flex; align-items:center; justify-content:center;
+                line-height:1.15; font-size:11px; text-align:center;
+                border-width:1px; border-radius:11px;
+            }
+        }
+
+        /* On narrow screens all top-level destinations remain visible and evenly tappable. */
+        @media (max-width: 540px) {
+            .top-nav {
+                display:flex; width:100%; min-height:58px; height:auto;
+                padding:6px 7px; gap:5px; align-items:center;
+            }
+            .brand { flex:0 0 29px; width:29px; min-width:29px; margin:0; padding:0; gap:0; }
+            .brand img { width:29px; height:29px; border-radius:8px; padding:0; }
+            .brand span { display:none !important; }
+            .nav-tabs { flex:1 1 0; min-width:0; height:auto; gap:2px; justify-content:space-evenly; }
+            .nav-tab {
+                flex:1 1 0; min-width:0; min-height:43px; height:auto;
+                flex-direction:column; gap:2px; padding:4px 1px;
+                border-radius:8px; font-size:8.5px; line-height:1.05;
+            }
+            .nav-tab svg { display:block; width:15px; height:15px; }
+            .nav-tab span { display:block !important; max-width:100%; white-space:normal; text-align:center; overflow-wrap:anywhere; }
+            .top-nav-right { flex:0 0 auto; height:auto; gap:4px; align-items:center; }
+            button.top-profile-badge,.theme-trigger-btn,.logout-btn {
+                width:31px !important; min-width:31px; height:31px; padding:0;
+                border-radius:9px; display:grid; place-items:center;
+            }
+            button.top-profile-badge { border-radius:50%; }
+            .top-profile-avatar { width:100%; height:100%; }
+            .theme-trigger-dot { width:17px; height:17px; }
+            .logout-btn { gap:0; }
+            .logout-btn svg { width:15px; height:15px; }
+            .logout-btn span { display:none !important; }
+            .result-picker {
+                display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+                gap:8px; width:100%; max-width:100%; padding:0;
+            }
+            .result-option-heading { font-size:10px; margin-bottom:5px; }
+            .option-rail { min-height:41px; padding:3px; gap:3px; border-radius:10px; }
+            .option-chip { min-height:33px; padding:6px 9px; font-size:10px; }
+        }
+        @media (max-width: 365px) {
+            .top-nav { padding-left:5px; padding-right:5px; gap:3px; }
+            .brand { flex:0 0 26px; width:26px; min-width:26px; }
+            .brand img { width:26px; min-width:26px; height:26px; }
+            .nav-tab { font-size:7.7px; }
+            .nav-tab svg { width:14px; height:14px; }
+            .top-nav-right { gap:3px; }
+            button.top-profile-badge,.theme-trigger-btn,.logout-btn { width:28px !important; min-width:28px; height:28px; }
+        }
+
+        /* Semester first; the exam selector slides into the same row after a choice. */
+        .result-picker {
+            display:grid; grid-template-columns:minmax(0,1fr) 0fr;
+            gap:12px; align-items:end; max-width:460px; margin:0 auto;
+            transition:grid-template-columns .36s cubic-bezier(.2,.8,.2,1),max-width .36s ease;
+        }
+        .result-option-group { min-width:0; overflow:hidden; }
+        .result-exam-option-group {
+            min-width:0; max-width:0; opacity:0; overflow:hidden;
+            transform:translateX(18px); pointer-events:none;
+            transition:opacity .22s ease,transform .32s cubic-bezier(.2,.8,.2,1),max-width .36s ease;
+        }
+        .result-picker.has-exam-options { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:100%; }
+        .result-picker.has-exam-options .result-exam-option-group {
+            max-width:100%; opacity:1; transform:translateX(0); pointer-events:auto; overflow:visible;
+        }
+        .result-total-summary {
+            display:flex; align-items:center; justify-content:space-between; gap:12px;
+            width:100%; margin:14px 0 0; padding:12px 14px;
+            border:1px solid #e2e8f0; border-radius:12px;
+            background:#f8fafc; color:var(--text-muted); font-size:12px; font-weight:700;
+        }
+        .result-total-summary strong { color:var(--text-dark); font-size:14px; font-weight:850; font-variant-numeric:tabular-nums; text-align:right; overflow-wrap:anywhere; }
+        body.dark-mode .result-total-summary { background:#172131; border-color:#334155; color:#94a3b8; }
+        body.dark-mode .result-total-summary strong { color:#f1f5f9; }
+        @media (max-width:540px) {
+            .result-picker:not(.has-exam-options) { grid-template-columns:minmax(0,1fr); max-width:460px; }
+            .result-picker.has-exam-options { grid-template-columns:repeat(2,minmax(0,1fr)); max-width:100%; gap:7px; }
+            .result-exam-option-group { max-width:0; }
+            .result-picker.has-exam-options .result-exam-option-group { max-width:100%; }
+            .result-total-summary { padding:10px 12px; font-size:11px; }
+        }
+
+        /* Timetable uses one compact row per class; only the focused class is open. */
+        .timetable-list { gap:7px; }
+        details.timetable-class {
+            display:block; min-width:0; padding:0; border-radius:12px;
+            background:var(--card-bg); overflow:hidden;
+        }
+        .timetable-class > .timetable-summary { 
+            display:grid; grid-template-columns:minmax(112px,.72fr) minmax(0,1.7fr) 18px;
+            align-items:center; gap:10px; min-height:58px; padding:10px 12px;
+            list-style:none; cursor:pointer; -webkit-tap-highlight-color:transparent;
+        }
+        .timetable-class > .timetable-summary::-webkit-details-marker { display:none; }
+        .timetable-class > .timetable-summary::marker { content:''; }
+        .timetable-time-wrap { display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:0; }
+        .timetable-time { color:var(--primary); font-size:11px; font-weight:850; line-height:1.25; }
+        .timetable-summary-subject { min-width:0; color:var(--text-dark); font-size:12px; font-weight:750; line-height:1.25; overflow-wrap:anywhere; }
+        .timetable-chevron { width:16px; height:16px; color:var(--text-muted); transition:transform .2s ease; }
+        .timetable-class[open] .timetable-chevron { transform:rotate(180deg); }
+        .timetable-details {
+            display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center;
+            padding:9px 12px 11px; border-top:1px solid rgba(148,163,184,.22);
+            color:var(--text-muted); font-size:10px; font-weight:600;
+        }
+        .timetable-details span { display:flex; gap:5px; min-width:0; overflow-wrap:anywhere; }
+        .timetable-details b { color:var(--text-dark); font-weight:800; }
+        .timetable-class.is-current {
+            background:linear-gradient(90deg,rgba(250,204,21,.22) 0 var(--class-progress,100%),var(--card-bg) var(--class-progress,100%) 100%);
+            border-color:rgba(234,179,8,.65);
+        }
+        .timetable-class.is-current .timetable-status { color:#854d0e; background:rgba(250,204,21,.25); }
+        .timetable-class.is-next { background:color-mix(in srgb,var(--primary) 7%,var(--card-bg)); border-color:color-mix(in srgb,var(--primary) 42%,#e2e8f0); }
+        .timetable-class.is-done { opacity:.66; }
+        body.dark-mode .timetable-class.is-current {
+            background:linear-gradient(90deg,rgba(234,179,8,.22) 0 var(--class-progress,100%),#111827 var(--class-progress,100%) 100%);
+            border-color:rgba(250,204,21,.5);
+        }
+        body.dark-mode .timetable-class.is-current .timetable-status { color:#fde68a; background:rgba(250,204,21,.14); }
+        body.dark-mode .timetable-class.is-next { background:color-mix(in srgb,var(--primary) 12%,#111827); }
+        body.dark-mode .timetable-details { border-top-color:#334155; }
+        body.dark-mode .timetable-details b,body.dark-mode .timetable-summary-subject { color:#f1f5f9; }
+        @media(max-width:540px) {
+            .timetable-class > .timetable-summary { grid-template-columns:minmax(98px,.8fr) minmax(0,1.2fr) 16px; gap:7px; min-height:54px; padding:9px 9px; }
+            .timetable-time { font-size:10px; }
+            .timetable-summary-subject { font-size:11px; }
+            .timetable-status { font-size:8px; padding:3px 5px; }
+            .timetable-details { gap:7px 12px; padding:8px 10px 10px; }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .result-picker,.result-exam-option-group,.timetable-chevron { transition:none !important; }
+        }
+
+</style>
 </head>
 <body>
 
@@ -321,30 +801,30 @@
 
     <div id="dashboard-view" class="hidden">
         <div class="top-nav">
-            <div class="brand">
-                <img src="https://www.glbitm.org/Uploads/image/846imguf_LogoGLBajaj.jpg" alt="GL Bajaj"> 
+            <div class="brand tour-replay-trigger" id="brandTourTrigger" role="button" tabindex="0" title="Click to replay the feature tour" aria-label="Replay iSIM Lite feature tour" onclick="startOnboardingTour(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();startOnboardingTour(true);}">
+                <img src="https://www.glbitm.org/Uploads/image/846imguf_LogoGLBajaj.jpg" alt="GL Bajaj">
                 <span class="hide-mobile">GLBAJAJ</span>
             </div>
             <div class="nav-tabs">
                 <button class="nav-tab active" id="tabBtnAttendance" onclick="switchMainTab('view-attendance', this)">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4.5" width="14" height="17" rx="2.2"></rect><path d="M9 4.5V3h6v1.5M8.5 12.5l2.2 2.2 4.8-5"></path></svg>
                     <span>Attendance</span>
                 </button>
-                <button class="nav-tab" id="tabBtnProfile" onclick="switchMainTab('view-profile', this)">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    <span>Profile</span>
+                <button class="nav-tab" id="tabBtnResults" onclick="switchMainTab('view-results', this)" title="Exam Results">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V5M4 20h17"></path><rect x="7" y="12" width="3.5" height="5" rx=".8"></rect><rect x="13" y="8" width="3.5" height="9" rx=".8"></rect><path d="m7 9 4-3 3 1 5-4"></path></svg>
+                    <span>Results</span>
+                </button>
+                <button class="nav-tab" id="tabBtnTimetable" onclick="switchMainTab('view-timetable', this)" title="Timetable">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.2"></rect><path d="M8 2.5v4M16 2.5v4M3 9.5h18M7.5 13h3M13.5 13h3M7.5 17h3"></path></svg>
+                    <span>Timetable</span>
                 </button>
             </div>
             <div class="top-nav-right">
-                <div class="top-profile-badge" onclick="switchMainTab('view-profile', document.getElementById('tabBtnProfile'))">
-                    <div class="top-profile-avatar" id="topNavAvatar">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    </div>
-                    <div class="top-profile-info">
-                        <span class="top-profile-name" id="topNavName">Student</span>
-                        <span class="top-profile-adm" id="topNavAdm">-</span>
-                    </div>
-                </div>
+                <button type="button" class="top-profile-badge" id="topProfileBadge" onclick="switchMainTab('view-profile', this)" title="View Profile" aria-label="Open student profile" aria-pressed="false">
+                    <span class="top-profile-avatar" id="topNavAvatar">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20a7 7 0 0 1 14 0"></path></svg>
+                    </span>
+                </button>
                 <div class="theme-picker-wrapper" id="themePickerWrapper">
                     <button type="button" class="theme-trigger-btn" id="themeTriggerBtn" onclick="toggleThemeMenu(event)" title="Change Theme Color" aria-label="Change Theme Color">
                         <span class="theme-trigger-dot" id="themeTriggerDot"></span>
@@ -362,6 +842,21 @@
                             </button>
                         </div>
                         <div class="theme-divider"></div>
+                        <div class="theme-popover-title">Font Style</div>
+                        <label class="font-picker-label" for="fontFamilySelect"><span>Typeface</span>
+                            <select id="fontFamilySelect" onchange="setFontFamily(this.value)" aria-label="Choose dashboard font">
+                                <option value="ADLaM Display">ADLaM Display · Default</option>
+                                <option value="Outfit">Outfit</option>
+                                <option value="DynaPuff">DynaPuff</option>
+                                <option value="Figtree">Figtree</option>
+                                <option value="Inter">Inter</option>
+                                <option value="Nunito">Nunito</option>
+                                <option value="Poppins">Poppins</option>
+                                <option value="Quicksand">Quicksand</option>
+                                <option value="Rubik">Rubik</option>
+                            </select>
+                        </label>
+                        <div class="theme-divider"></div>
                         <div class="theme-popover-title">Accent Color</div>
                         <div class="theme-swatch-grid" id="themeSwatchGrid"></div>
                     </div>
@@ -376,24 +871,24 @@
         <div class="main-container">
             <div id="view-attendance" class="view-section">
                 <div class="card">
-                    <div class="att-tabs">
+                    <div class="att-tabs" id="attSubTabs">
                         <button class="att-btn active" onclick="loadAttendance('today', this)">Date-Wise Attendance</button>
                         <button class="att-btn" onclick="loadAttendance('monthly', this)">Monthly Attendance</button>
                         <button class="att-btn" onclick="loadAttendance('semester', this)">Semester Analytics</button>
                         <button class="att-btn" onclick="showDateFilters('subject', this)">Subject Wise</button>
                     </div>
 
-                    <div id="dateWiseNavBlock" class="filter-row" style="flex-wrap: nowrap; gap: 8px; padding: 10px 12px;">
-                        <button type="button" id="btnPrevDate" class="btn-small" onclick="navigateDate(-1)" title="Previous Date with Attendance" aria-label="Previous Date" style="padding: 8px 12px; flex-shrink: 0;">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M15 19l-7-7 7-7"></path></svg>
+                    <div id="dateWiseNavBlock" class="date-navigation-control" aria-label="Attendance date navigation">
+                        <button type="button" id="btnPrevDate" class="date-nav-arrow" onclick="navigateDate(-1)" title="Previous date" aria-label="Previous date">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
                         </button>
-                        <div class="date-input-group" onclick="openDatePicker()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDatePicker();}" style="position: relative; width: auto; flex: 1; max-width: 240px; justify-content: center; gap: 8px; padding: 8px 14px; min-width: 0; cursor: pointer; user-select: none;">
-                            <span id="selectedDateText" style="font-weight: 800; font-size: 14px; color: var(--text-dark); letter-spacing: 0.3px; white-space: nowrap;">--/--/----</span>
-                            <span id="selectedDayBadge" class="badge badge-default" style="font-size: 10px; padding: 3px 7px; min-width: auto; white-space: nowrap;">Today</span>
-                            <input type="date" id="selectedAttendanceDate" onchange="handleCustomDateSelect(this.value)" tabindex="-1" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; border: none;">
+                        <div class="date-navigation-current" onclick="openDatePicker()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openDatePicker();}">
+                            <span id="selectedDateText">-- Nov</span>
+                            <span id="selectedDayBadge" class="date-nav-badge">Today</span>
+                            <input type="date" id="selectedAttendanceDate" onchange="handleCustomDateSelect(this.value)" tabindex="-1" aria-label="Choose attendance date">
                         </div>
-                        <button type="button" id="btnNextDate" class="btn-small" onclick="navigateDate(1)" title="Next Date with Attendance" aria-label="Next Date" style="padding: 8px 12px; flex-shrink: 0; opacity: 0.5; cursor: not-allowed;" disabled>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M9 5l7 7-7 7"></path></svg>
+                        <button type="button" id="btnNextDate" class="date-nav-arrow" onclick="navigateDate(1)" title="Next date" aria-label="Next date" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
                         </button>
                     </div>
 
@@ -458,14 +953,67 @@
                     </div>
                 </div>
             </div>
+            <div id="view-results" class="view-section hidden">
+                <div class="card feature-card">
+                    <div class="feature-heading"><div><h2>Exam Results</h2></div><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V5M4 20h17"></path><rect x="7" y="12" width="3.5" height="5" rx=".8"></rect><rect x="13" y="8" width="3.5" height="9" rx=".8"></rect></svg></div></div>
+                    <div class="result-picker" id="resultPicker">
+                        <section class="result-option-group" aria-labelledby="semesterOptionLabel">
+                            <div class="result-option-heading"><span id="semesterOptionLabel">Semester</span></div>
+                            <div class="option-rail" id="resultSemesterOptions" role="radiogroup" aria-label="Choose semester"><span class="option-placeholder">Loading semesters…</span></div>
+                        </section>
+                        <section class="result-option-group result-exam-option-group" id="resultExamOptionGroup" aria-labelledby="examOptionLabel">
+                            <div class="result-option-heading"><span id="examOptionLabel">Exam</span></div>
+                            <div class="option-rail is-disabled" id="resultExamOptions" role="radiogroup" aria-label="Choose examination" aria-disabled="true"><span class="option-placeholder">Select a semester first</span></div>
+                        </section>
+
+                    </div>
+                    <div id="resultMessage" class="feature-message hidden" role="status" aria-live="polite"></div>
+                    <div id="resultContent" class="hidden"></div>
+                </div>
+            </div>
+            <div id="view-timetable" class="view-section hidden">
+                <div class="card feature-card">
+                    <div class="feature-heading"><div><h2>Timetable</h2></div><div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4.5" width="18" height="17" rx="2.2"></rect><path d="M8 2.5v4M16 2.5v4M3 9.5h18M7.5 13h3M13.5 13h3M7.5 17h3"></path></svg></div></div>
+                    <div class="tt-day-navigator" id="ttDayNavigator" aria-label="Timetable day navigation">
+                        <button type="button" class="tt-day-arrow" onclick="shiftTimetableDay(-1)" title="Previous day" aria-label="Previous day">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+                        </button>
+                        <div class="tt-day-current" aria-live="polite">
+                            <strong id="ttDayName">Monday</strong>
+                        </div>
+                        <button type="button" class="tt-day-arrow" onclick="shiftTimetableDay(1)" title="Next day" aria-label="Next day">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+                        </button>
+                    </div>
+                    <div id="timetableMessage" class="feature-message" role="status">Loading your weekly timetable…</div>
+                    <div id="timetableContent" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tour-overlay" id="tourOverlay" onclick="endOnboardingTour(false)" aria-hidden="true"></div>
+    <div class="tour-popover" id="tourPopover" role="dialog" aria-modal="true" aria-labelledby="tourStepTitle" onclick="event.stopPropagation()">
+        <span class="tour-step-badge" id="tourStepCounter">Step 1 of 17</span>
+        <h4 id="tourStepTitle">Attendance Analytics</h4>
+        <p id="tourStepDesc">Explore the attendance views available in your dashboard.</p>
+        <div class="tour-actions">
+            <button type="button" class="tour-btn-skip" onclick="endOnboardingTour(false)">Skip Tour</button>
+            <div class="tour-nav-group">
+                <button type="button" class="tour-btn-sec" id="tourBtnPrev" onclick="stepOnboardingTour(-1)">Back</button>
+                <button type="button" class="tour-btn-pri" id="tourBtnNext" onclick="stepOnboardingTour(1)">Next</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const API_BASE = 'https://glb-portal-backend.onrender.com/api';
+        const API_HOST = location.hostname || 'localhost';
+        const API_BASE = window.API_BASE_URL || (location.protocol === 'https:' ? `${location.origin}/api` : `http://${API_HOST}:3000/api`);
         const BASE_PORTAL_URL = 'https://glb.servergi.com:8071/iSIMGLBMTR';
         const SESSION_STORAGE_KEY = 'glb_student_portal_session';
         const SUBJECT_DATES_STORAGE_KEY = 'glb_subject_attendance_dates_v1';
+        const FONT_STORAGE_KEY = 'isim_lite_font_family_v1';
+        const FONT_CHOICES = ['ADLaM Display', 'Outfit', 'DynaPuff', 'Figtree', 'Inter', 'Nunito', 'Poppins', 'Quicksand', 'Rubik'];
         let sessionId = localStorage.getItem(SESSION_STORAGE_KEY) || null;
         let currentAttType = 'today';
         let profileLoaded = false;
@@ -478,6 +1026,24 @@
         let profileRequestId = 0;
         let captchaRequestId = 0;
         let currentView = 'view-attendance';
+        let resultOptionsLoaded = false;
+        let resultRequestId = 0;
+        let resultOptionsRequestId = 0;
+        let resultSemesterOptions = [];
+        let resultExamOptions = [];
+        let selectedResultSemester = '';
+        let selectedResultExam = '';
+        let timetableRequestId = 0;
+        let weeklyTimetablePromise = null;
+        let cachedWeeklyTimetableSessionId = null;
+        let currentTimetableDate = isSundayIso(getTodayIsoDate()) ? stepDateSkippingSunday(getTodayIsoDate(), 1) : getTodayIsoDate();
+        let timetableClockInterval = null;
+        let isResultLoading = false;
+        let onboardingVisible = false;
+        let currentTourStep = 0;
+        let tourActionStep = -1;
+        let tourRenderToken = 0;
+        let tourThemeSnapshot = null;
 
         let currentSelectedDate = getTodayIsoDate();
         let searchInFlight = false;
@@ -682,12 +1248,21 @@
             }
         });
 
+        function setFontFamily(fontFamily, persist = true) {
+            const selected = FONT_CHOICES.includes(fontFamily) ? fontFamily : 'ADLaM Display';
+            document.documentElement.style.setProperty('--app-font', `'${selected.replace(/'/g, '')}'`);
+            const picker = document.getElementById('fontFamilySelect');
+            if (picker) picker.value = selected;
+            if (persist) localStorage.setItem(FONT_STORAGE_KEY, selected);
+        }
+
         function applyInitialTheme() {
             initThemeSwatches();
             const savedDark = localStorage.getItem(DARK_MODE_KEY) === '1';
             setDarkMode(savedDark, false);
             const savedMode = localStorage.getItem(THEME_PREF_KEY) || 'rainbow';
             selectThemeMode(savedMode, false);
+            setFontFamily(localStorage.getItem(FONT_STORAGE_KEY) || 'ADLaM Display', false);
         }
         applyInitialTheme();
 
@@ -702,6 +1277,7 @@
             const summaryTitle = document.getElementById('todaySummaryTitle');
 
             const formattedDate = formatIsoToDdMmYyyy(currentSelectedDate);
+            const shortDateLabel = parseIsoDateLocal(currentSelectedDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
 
             if (dateInput) {
                 dateInput.max = todayIso;
@@ -709,7 +1285,7 @@
                 dateInput.disabled = searchInFlight;
             }
             if (dateText) {
-                dateText.innerText = formattedDate;
+                dateText.innerText = shortDateLabel;
             }
             if (stopBtn) {
                 stopBtn.classList.toggle('hidden', !searchInFlight);
@@ -723,7 +1299,7 @@
             if (summaryTitle) {
                 summaryTitle.innerText = isToday
                     ? 'Today • Stats'
-                    : `${formattedDate} (${dayName.slice(0, 3)})`;
+                    : `${shortDateLabel} · ${dayName.slice(0, 3)}`;
             }
 
             const prevIcon = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:18px;height:18px;"><path d="M15 19l-7-7 7-7"></path></svg>`;
@@ -953,8 +1529,7 @@
                 Wednesday: [],
                 Thursday: [],
                 Friday: [],
-                Saturday: [],
-                Sunday: []
+                Saturday: []
             };
             const allRows = [];
             let currentDay = '';
@@ -965,7 +1540,8 @@
                 if (firstTd) {
                     const candidateDay = cleanText(firstTd.textContent);
                     if (/^(Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/i.test(candidateDay)) {
-                        currentDay = candidateDay.charAt(0).toUpperCase() + candidateDay.slice(1).toLowerCase();
+                        const parsedDay = candidateDay.charAt(0).toUpperCase() + candidateDay.slice(1).toLowerCase();
+                        currentDay = parsedDay === 'Sunday' ? '' : parsedDay;
                     }
                 }
 
@@ -1232,27 +1808,37 @@
         }
 
         async function ensureWeeklyTimetableLoaded() {
-            if (cachedWeeklyTimetable) return cachedWeeklyTimetable;
-            try {
-                const res = await fetchWithRetry(`${API_BASE}/timetable/weekly`, {
+            if (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) return cachedWeeklyTimetable;
+            const stored = readWeeklyTimetableCache();
+            if (stored) return stored;
+            if (weeklyTimetablePromise) return weeklyTimetablePromise;
+
+            const requestedSessionId = sessionId;
+            weeklyTimetablePromise = (async () => {
+                const response = await fetchWithRetry(`${API_BASE}/timetable/weekly`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId })
+                    body: JSON.stringify({ sessionId: requestedSessionId })
                 }, 1, 20000);
-                if (res.status === 401) {
-                    const err = new Error('SESSION_EXPIRED');
-                    err.code = 'SESSION_EXPIRED';
-                    throw err;
+                if (response.status === 401) {
+                    const error = new Error('College portal session expired.');
+                    error.code = 'SESSION_EXPIRED';
+                    throw error;
                 }
-                const data = await res.json();
-                if (res.ok && data.success && data.html) {
-                    const parsed = parseWeeklyTimetableHtml(data.html);
-                    if (parsed) cachedWeeklyTimetable = parsed;
-                }
-            } catch (err) {
-                if (err.code === 'SESSION_EXPIRED' || err.code === 'SEARCH_STOPPED') throw err;
+                const data = await response.json();
+                if (requestedSessionId !== sessionId) throw new Error('Your login session changed. Please load the timetable again.');
+                if (!response.ok || !data.success) throw new Error(data.error || 'Weekly timetable could not be loaded.');
+                const timetable = data.timetable || (data.html ? parseWeeklyTimetableHtml(data.html) : null);
+                if (!timetable) throw new Error('The college portal returned an unreadable weekly timetable.');
+                saveWeeklyTimetableCache(timetable, requestedSessionId);
+                return timetable;
+            })();
+
+            try {
+                return await weeklyTimetablePromise;
+            } finally {
+                weeklyTimetablePromise = null;
             }
-            return cachedWeeklyTimetable;
         }
 
         async function fetchDateOrTodayAttendance(isoDateStr) {
@@ -1642,7 +2228,7 @@
         }
 
         function routeUrl(route) {
-            const routes = { login: '?login', today: '?attendance#today', monthly: '?attendance#monthly', semester: '?attendance#semester', profile: '?profile' };
+            const routes = { login: '?login', today: '?attendance#today', monthly: '?attendance#monthly', semester: '?attendance#semester', profile: '?profile', results: '?results', timetable: '?timetable' };
             if (route === 'subject') {
                 const from = document.getElementById('dateFrom')?.value || readSubjectDates().from;
                 const to = document.getElementById('dateTo')?.value || readSubjectDates().to;
@@ -1664,6 +2250,8 @@
             const queryParams = new URLSearchParams(window.location.search);
             const hash = location.hash.replace(/^#/, '').toLowerCase();
             if (queryParams.has('profile')) return 'profile';
+            if (queryParams.has('results')) return 'results';
+            if (queryParams.has('timetable')) return 'timetable';
             if (queryParams.has('attendance')) return ['today','monthly','semester','subject'].includes(hash) ? hash : 'today';
             return 'login';
         }
@@ -1691,6 +2279,7 @@
         function showDashboardView() {
             document.getElementById('login-view').classList.add('hidden');
             document.getElementById('dashboard-view').classList.remove('hidden');
+            checkOnboarding();
         }
 
         function switchMainTab(viewId, btn, updateRoute = true) {
@@ -1699,14 +2288,28 @@
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(viewId)?.classList.remove('hidden');
             document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+            const profileButton = document.getElementById('topProfileBadge');
+            if (profileButton) {
+                const isProfile = viewId === 'view-profile';
+                profileButton.classList.toggle('active', isProfile);
+                profileButton.setAttribute('aria-pressed', String(isProfile));
+            }
             if (btn) btn.classList.add('active');
-
             if (viewId === 'view-profile') {
                 if (updateRoute) setPageRoute('profile');
                 if (!profileLoaded) fetchProfile(false);
                 return;
             }
-
+            if (viewId === 'view-results') {
+                if (updateRoute) setPageRoute('results');
+                if (!resultOptionsLoaded) loadResultOptions();
+                return;
+            }
+            if (viewId === 'view-timetable') {
+                if (updateRoute) setPageRoute('timetable');
+                loadTimetable();
+                return;
+            }
             if (currentAttType === 'subject') {
                 const subjectBtn = document.querySelector('.att-btn[onclick*="showDateFilters"]');
                 showDateFilters('subject', subjectBtn, updateRoute, true);
@@ -1716,9 +2319,7 @@
             if (!attendanceLoaded || Date.now() - attendanceLoadedAt > 60000) {
                 const attBtn = document.querySelector(`.att-btn[onclick*="'${currentAttType}'"]`) || document.querySelector('.att-btn');
                 loadAttendance(currentAttType, attBtn, false);
-            } else {
-                syncAttendanceTabButtons(currentAttType);
-            }
+            } else syncAttendanceTabButtons(currentAttType);
         }
 
         function syncAttendanceTabButtons(type) {
@@ -1729,6 +2330,7 @@
 
         async function logoutPortal() {
             if (searchInFlight) stopAttendanceSearch();
+            clearWeeklyTimetableCache(sessionId);
             if (sessionId) {
                 try {
                     await fetch(`${API_BASE}/logout`, {
@@ -1745,6 +2347,12 @@
             attendanceLoaded = false;
             attendanceLoadedType = null;
             cachedWeeklyTimetable = null;
+            cachedWeeklyTimetableSessionId = null;
+            weeklyTimetablePromise = null;
+            resultOptionsLoaded = false;
+            resultOptionsRequestId++;
+            resultRequestId++;
+            timetableRequestId++;
             dateAttendanceCache.clear();
             searchInFlight = false;
             searchDirection = 0;
@@ -1815,7 +2423,11 @@
 
             showDashboardView();
             if (route === 'profile') {
-                switchMainTab('view-profile', document.getElementById('tabBtnProfile'), false);
+                switchMainTab('view-profile', document.getElementById('topProfileBadge'), false);
+            } else if (route === 'results') {
+                switchMainTab('view-results', document.getElementById('tabBtnResults'), false);
+            } else if (route === 'timetable') {
+                switchMainTab('view-timetable', document.getElementById('tabBtnTimetable'), false);
             } else {
                 const validRoutes = ['today', 'monthly', 'semester', 'subject'];
                 currentAttType = validRoutes.includes(route) ? route : 'today';
@@ -1855,6 +2467,7 @@
                 
             } catch (error) {
                 if (error.message === 'SESSION_EXPIRED') {
+                    clearWeeklyTimetableCache(sessionId);
                     localStorage.removeItem(SESSION_STORAGE_KEY);
                     sessionId = null;
                     currentProfilePhoto = null;
@@ -1908,7 +2521,15 @@
                 const data = await res.json();
                 if (data.success) {
                     localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+                    localStorage.setItem('isim_lite_user_id', document.getElementById('admNumber').value.trim().toUpperCase());
                     cachedWeeklyTimetable = null;
+                    cachedWeeklyTimetableSessionId = null;
+                    weeklyTimetablePromise = null;
+                    currentTimetableDate = getTodayIsoDate();
+                    resultOptionsLoaded = false;
+                    resultOptionsRequestId++;
+                    resultRequestId++;
+                    timetableRequestId++;
                     dateAttendanceCache.clear();
                     currentSelectedDate = getTodayIsoDate();
                     updateDateNavigationUI();
@@ -2336,6 +2957,826 @@
                 }, 20);
             }
         }
+
+
+        function setFeatureMessage(id, message, isError = false) {
+            const element = document.getElementById(id);
+            if (!element) return;
+            element.textContent = message || '';
+            element.classList.toggle('error', Boolean(isError));
+            element.classList.toggle('hidden', !message);
+        }
+
+        function restoreResultButton() {
+        }
+
+        function updateResultActionState() {
+        }
+
+        function syncOptionIndicator(rail) {
+            if (!rail) return;
+            const indicator = rail.querySelector('.option-indicator');
+            const active = rail.querySelector('.option-chip.active');
+            if (!indicator) return;
+            if (!active) {
+                rail.classList.remove('has-selection');
+                indicator.style.width = '0px';
+                return;
+            }
+            indicator.style.width = `${active.offsetWidth}px`;
+            indicator.style.transform = `translateX(${active.offsetLeft}px)`;
+            rail.classList.add('has-selection');
+        }
+
+        function renderResultOptionRail(type, options, selectedValue = '') {
+            const rail = document.getElementById(type === 'semester' ? 'resultSemesterOptions' : 'resultExamOptions');
+            if (!rail) return;
+            rail.innerHTML = '';
+            const indicator = document.createElement('span');
+            indicator.className = 'option-indicator';
+            indicator.setAttribute('aria-hidden', 'true');
+            rail.appendChild(indicator);
+
+            if (!options || !options.length) {
+                rail.classList.remove('has-selection');
+                const placeholder = document.createElement('span');
+                placeholder.className = 'option-placeholder';
+                placeholder.textContent = type === 'semester' ? 'No semesters available' : (selectedResultSemester ? 'No examinations available' : 'Select a semester first');
+                rail.appendChild(placeholder);
+                return;
+            }
+
+            options.forEach((option, index) => {
+                const value = String(option.value ?? '');
+                const label = String(option.label ?? option.value ?? `Option ${index + 1}`);
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = `option-chip${value === String(selectedValue) ? ' active' : ''}`;
+                button.dataset.value = value;
+                button.textContent = label;
+                button.setAttribute('role', 'radio');
+                button.setAttribute('aria-checked', String(value === String(selectedValue)));
+                button.addEventListener('click', () => {
+                    if (type === 'semester') selectResultSemester(value);
+                    else selectResultExam(value);
+                });
+                rail.appendChild(button);
+            });
+
+            requestAnimationFrame(() => {
+                syncOptionIndicator(rail);
+                const active = rail.querySelector('.option-chip.active');
+                if (active) active.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            });
+        }
+
+        async function loadResultOptions() {
+            const semesterRail = document.getElementById('resultSemesterOptions');
+            const examRail = document.getElementById('resultExamOptions');
+            if (!sessionId || !semesterRail || !examRail) return;
+            resultOptionsLoaded = false;
+            isResultLoading = false;
+            document.getElementById('resultPicker')?.classList.remove('has-exam-options');
+            selectedResultSemester = '';
+            selectedResultExam = '';
+            restoreResultButton();
+            resultSemesterOptions = [];
+            resultExamOptions = [];
+            updateResultActionState();
+            renderResultOptionRail('semester', [], '');
+            renderResultOptionRail('exam', [], '');
+            examRail.classList.add('is-disabled');
+            examRail.setAttribute('aria-disabled', 'true');
+            setFeatureMessage('resultMessage', 'Loading available semesters…');
+
+            const requestId = ++resultOptionsRequestId;
+            try {
+                const response = await fetch(`${API_BASE}/results/options?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+                const data = await response.json();
+                if (requestId !== resultOptionsRequestId) return;
+                if (response.status === 401) {
+                    document.getElementById('resultContent').classList.remove('hidden');
+                    return showSessionExpiredUI(document.getElementById('resultContent'));
+                }
+                if (!response.ok || !data.success) throw new Error(data.error || 'Could not load semester options.');
+                resultSemesterOptions = Array.isArray(data.semesters) ? data.semesters : [];
+                renderResultOptionRail('semester', resultSemesterOptions, '');
+                resultOptionsLoaded = true;
+                setFeatureMessage('resultMessage', resultSemesterOptions.length ? '' : 'No semesters available.', !resultSemesterOptions.length);
+            } catch (error) {
+                if (requestId === resultOptionsRequestId) {
+                    setFeatureMessage('resultMessage', error.message || 'Exam options could not be loaded.', true);
+                    resultOptionsLoaded = false;
+                }
+            }
+        }
+
+        async function selectResultSemester(value) {
+            if (!value || value === selectedResultSemester || !sessionId) return;
+            selectedResultSemester = String(value);
+            selectedResultExam = '';
+            resultRequestId++;
+            isResultLoading = false;
+            restoreResultButton();
+            resultExamOptions = [];
+            document.getElementById('resultPicker')?.classList.remove('has-exam-options');
+            updateResultActionState();
+            renderResultOptionRail('semester', resultSemesterOptions, selectedResultSemester);
+            const examRail = document.getElementById('resultExamOptions');
+            examRail.classList.add('is-disabled');
+            examRail.setAttribute('aria-disabled', 'true');
+            renderResultOptionRail('exam', [], '');
+            document.getElementById('resultContent').classList.add('hidden');
+            setFeatureMessage('resultMessage', 'Loading…');
+
+            const requestId = ++resultOptionsRequestId;
+            try {
+                const response = await fetch(`${API_BASE}/results/options`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, semester: selectedResultSemester })
+                });
+                const data = await response.json();
+                if (requestId !== resultOptionsRequestId) return;
+                if (response.status === 401) {
+                    document.getElementById('resultContent').classList.remove('hidden');
+                    return showSessionExpiredUI(document.getElementById('resultContent'));
+                }
+                if (!response.ok || !data.success) throw new Error(data.error || 'Could not load examinations.');
+                resultExamOptions = Array.isArray(data.exams) ? data.exams : [];
+                if (resultExamOptions.length) document.getElementById('resultPicker')?.classList.add('has-exam-options');
+                examRail.classList.remove('is-disabled');
+                examRail.setAttribute('aria-disabled', 'false');
+                renderResultOptionRail('exam', resultExamOptions, '');
+                setFeatureMessage('resultMessage', resultExamOptions.length ? '' : 'No exams available.', !resultExamOptions.length);
+            } catch (error) {
+                if (requestId === resultOptionsRequestId) {
+                    setFeatureMessage('resultMessage', error.message || 'Examinations could not be loaded.', true);
+                    examRail.classList.remove('is-disabled');
+                    examRail.setAttribute('aria-disabled', 'false');
+                }
+            }
+        }
+
+        function selectResultExam(value) {
+            if (!value || !sessionId) return;
+            selectedResultExam = String(value);
+            renderResultOptionRail('exam', resultExamOptions, selectedResultExam);
+            document.getElementById('resultContent').classList.add('hidden');
+            fetchExamResult();
+        }
+
+        function parseMarkNumber(value) {
+            const text = String(value ?? '').trim();
+            if (!text || text === '—' || text === '-') return null;
+            const match = text.replace(/,/g, '').match(/-?\d+(?:\.\d+)?/);
+            if (!match) return null;
+            const number = Number(match[0]);
+            return Number.isFinite(number) ? number : null;
+        }
+
+        function parseExamResultHtmlOnFrontend(htmlString, selectedSemester = '', selectedExam = '') {
+            const doc = parseHtmlDocument(htmlString);
+            const readText = id => {
+                const element = doc.getElementById(id);
+                return cleanText(element?.textContent) || null;
+            };
+            const getOptionLabel = (id, value) => {
+                const select = doc.getElementById(id);
+                if (!select) return value || null;
+                const option = Array.from(select.options || []).find(item => String(item.value) === String(value));
+                return cleanText(option?.textContent) || value || null;
+            };
+            const subjects = Array.from(doc.querySelectorAll('#MCPH1_SCPH_gvExamDetail tr'))
+                .map(row => Array.from(row.querySelectorAll('td')).map(cell => cleanText(cell.textContent)))
+                .filter(values => values.length >= 2 && values[1])
+                .map((values, index) => ({
+                    subjectName: values[1] || '',
+                    examType: values[2] || null,
+                    minimumMarks: values[3] || null,
+                    maximumMarks: values[4] || null,
+                    marksObtained: values[5] || null,
+                    marksType: values[6] || null,
+                    examMonth: values[7] || null
+                }));
+            const student = {
+                name: readText('MCPH1_SCPH_txtName'),
+                fatherName: readText('MCPH1_SCPH_txtFname'),
+                branch: readText('MCPH1_SCPH_lblbranch'),
+                admissionNumber: readText('MCPH1_SCPH_txtAdmNo'),
+                rollNumber: readText('MCPH1_SCPH_txtRollNo')
+            };
+            const summary = {
+                cgpa: readText('MCPH1_SCPH_txtCGPA'),
+                sgpa: readText('MCPH1_SCPH_txtSGPA'),
+                unitsEarned: readText('MCPH1_SCPH_txtUnitEarned'),
+                associatedUnit: readText('MCPH1_SCPH_txtAssociatedUnit'),
+                totalUnitPoints: readText('MCPH1_SCPH_txtUnitPoints'),
+                rank: readText('MCPH1_SCPH_txtRank'),
+                totalStudents: readText('MCPH1_SCPH_txtTotalStudent')
+            };
+            return {
+                semester: getOptionLabel('MCPH1_SCPH_ddldrp', selectedSemester),
+                semesterValue: selectedSemester || null,
+                examName: getOptionLabel('MCPH1_SCPH_ddlExamName', selectedExam),
+                examValue: selectedExam || null,
+                student,
+                subjects,
+                summary,
+                message: readText('MCPH1_SCPH_lblmsg') || readText('MCPH1_SCPH_lblMsg11'),
+                published: subjects.length > 0
+            };
+        }
+
+        function formatMarkTotal(value) {
+            if (!Number.isFinite(value)) return '—';
+            return Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2)));
+        }
+
+        function resultGaugeMarkup(value, maximum, tone) {
+            const hasValue = Number.isFinite(value);
+            const hasScale = hasValue && Number.isFinite(maximum) && maximum > 0;
+            const percentage = hasScale ? Math.max(0, Math.min(100, (value / maximum) * 100)) : 0;
+            const circumference = 251.327;
+            const offset = circumference * (1 - percentage / 100);
+            const stroke = tone === 'pass' ? '#16a34a' : tone === 'below' ? '#ef4444' : 'var(--primary)';
+            const centerValue = hasValue ? formatMarkTotal(value) : '—';
+            const denominator = hasScale ? `/ ${formatMarkTotal(maximum)}` : 'marks';
+            return `<div class="result-gauge" role="img" aria-label="Obtained marks ${escapeHtml(centerValue)} ${escapeHtml(denominator)}">
+                <svg viewBox="0 0 100 100" aria-hidden="true" focusable="false">
+                    <circle class="result-gauge-track" cx="50" cy="50" r="40"></circle>
+                    <circle class="result-gauge-ring" cx="50" cy="50" r="40" stroke="${stroke}" stroke-dasharray="${circumference}" stroke-dashoffset="${hasValue ? offset : circumference}"></circle>
+                </svg>
+                <div class="result-gauge-center"><strong>${escapeHtml(centerValue)}</strong><small>${escapeHtml(denominator)}</small></div>
+            </div>`;
+        }
+
+        function renderExamResult(result) {
+            const container = document.getElementById('resultContent');
+            const subjects = Array.isArray(result.subjects) ? result.subjects : [];
+            if (!subjects.length) {
+                container.innerHTML = `<div class="result-empty">${escapeHtml(result.message || 'No published marks available.')}</div>`;
+                container.classList.remove('hidden');
+                return;
+            }
+
+            let totalObtained = 0;
+            let obtainedCount = 0;
+            let totalMaximum = 0;
+            let maximumCount = 0;
+            const cards = subjects.map((row, index) => {
+                const subjectName = row.subjectName || `Subject ${index + 1}`;
+                const obtained = parseMarkNumber(row.marksObtained);
+                const minimum = parseMarkNumber(row.minimumMarks);
+                const maximum = parseMarkNumber(row.maximumMarks);
+                if (obtained !== null) { totalObtained += obtained; obtainedCount++; }
+                if (maximum !== null && maximum > 0) { totalMaximum += maximum; maximumCount++; }
+                const tone = obtained === null || minimum === null ? 'neutral' : (obtained >= minimum ? 'pass' : 'below');
+                return `<article class="result-subject-card ${tone}">
+                    ${resultGaugeMarkup(obtained, maximum, tone)}
+                    <h4 class="result-subject-name">${escapeHtml(subjectName)}</h4>
+                </article>`;
+            }).join('');
+
+            const completeTotal = obtainedCount === subjects.length && maximumCount === subjects.length;
+            const totalValue = obtainedCount
+                ? (completeTotal ? `${formatMarkTotal(totalObtained)} / ${formatMarkTotal(totalMaximum)}` : `${formatMarkTotal(totalObtained)} obtained`)
+                : '—';
+            const totalPercent = completeTotal && totalMaximum > 0
+                ? ` · ${Math.round((totalObtained / totalMaximum) * 100)}%`
+                : '';
+            container.innerHTML = `<div class="result-subject-grid">${cards}</div>
+                <div class="result-total-summary" aria-label="Total marks summary">
+                    <span>Total</span>
+                    <strong>${escapeHtml(totalValue)}${escapeHtml(totalPercent)}</strong>
+                </div>`;
+            container.classList.remove('hidden');
+        }
+
+        async function fetchExamResult() {
+            const semester = selectedResultSemester;
+            const exam = selectedResultExam;
+            const container = document.getElementById('resultContent');
+            if (!semester || !exam || !sessionId) return;
+
+            const requestId = ++resultRequestId;
+            isResultLoading = true;
+            container.classList.add('hidden');
+            setFeatureMessage('resultMessage', 'Loading…');
+            try {
+                const response = await fetch(`${API_BASE}/results`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, semester, exam })
+                });
+                const data = await response.json();
+                if (requestId !== resultRequestId) return;
+                if (response.status === 401) {
+                    container.classList.remove('hidden');
+                    return showSessionExpiredUI(container);
+                }
+                if (!response.ok || !data.success) throw new Error(data.error || 'Result unavailable.');
+                const resultPayload = data.result || data;
+                const parsedResult = resultPayload.html
+                    ? parseExamResultHtmlOnFrontend(resultPayload.html, semester, exam)
+                    : resultPayload;
+                renderExamResult(parsedResult);
+                setFeatureMessage('resultMessage', '');
+            } catch (error) {
+                if (requestId === resultRequestId) setFeatureMessage('resultMessage', error.message || 'Result unavailable.', true);
+            } finally {
+                if (requestId === resultRequestId) isResultLoading = false;
+            }
+        }
+
+        function weeklyTimetableStorageKey(forSessionId = sessionId) {
+            const safeSession = String(forSessionId || '').replace(/[^a-f0-9]/gi, '').slice(0, 96);
+            return safeSession ? `isim_lite_weekly_timetable_v1_${safeSession}` : '';
+        }
+
+        function clearWeeklyTimetableCache(forSessionId = sessionId) {
+            const key = weeklyTimetableStorageKey(forSessionId);
+            if (key) {
+                try { localStorage.removeItem(key); } catch (_) {}
+            }
+            cachedWeeklyTimetable = null;
+            cachedWeeklyTimetableSessionId = null;
+            weeklyTimetablePromise = null;
+        }
+
+        function readWeeklyTimetableCache() {
+            const key = weeklyTimetableStorageKey(sessionId);
+            if (!key) return null;
+            try {
+                const cached = JSON.parse(localStorage.getItem(key) || 'null');
+                if (cached && cached.sessionId === sessionId && cached.timetable && cached.timetable.byDay && typeof cached.timetable.byDay === 'object') {
+                    cachedWeeklyTimetable = cached.timetable;
+                    cachedWeeklyTimetableSessionId = sessionId;
+                    return cachedWeeklyTimetable;
+                }
+                if (cached) localStorage.removeItem(key);
+            } catch (_) {
+                try { localStorage.removeItem(key); } catch (_) {}
+            }
+            return null;
+        }
+
+        function saveWeeklyTimetableCache(timetable, forSessionId = sessionId) {
+            const key = weeklyTimetableStorageKey(forSessionId);
+            if (!key || !timetable || typeof timetable !== 'object') return;
+            try {
+                localStorage.setItem(key, JSON.stringify({ sessionId: forSessionId, savedAt: Date.now(), timetable }));
+            } catch (_) {
+            }
+            cachedWeeklyTimetable = timetable;
+            cachedWeeklyTimetableSessionId = forSessionId;
+        }
+
+        function updateTimetableDayNavigator(isoDate) {
+            const dayName = getDayNameFromIso(isoDate);
+            const dayLabel = document.getElementById('ttDayName');
+            if (dayLabel) dayLabel.textContent = dayName === 'Sunday' ? 'Monday' : dayName;
+        }
+
+        function timePartToMinutes(hourText, minuteText, periodText = '') {
+            let hour = Number(hourText);
+            const minute = Number(minuteText);
+            const period = String(periodText || '').toUpperCase();
+            if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59 || hour < 0 || hour > 23) return null;
+            if (period) {
+                if (hour < 1 || hour > 12) return null;
+                if (period === 'PM' && hour !== 12) hour += 12;
+                if (period === 'AM' && hour === 12) hour = 0;
+            }
+            return hour * 60 + minute;
+        }
+
+        function parseTimetableTimeRange(timeSlot) {
+            const matches = [...String(timeSlot || '').matchAll(/(\d{1,2})\s*[:.]\s*(\d{2})\s*(AM|PM)?/gi)];
+            if (matches.length < 2) return null;
+            const first = matches[0];
+            const second = matches[1];
+            const firstHour = Number(first[1]);
+            const secondHour = Number(second[1]);
+            let startPeriod = (first[3] || '').toUpperCase();
+            let endPeriod = (second[3] || '').toUpperCase();
+
+            if (startPeriod && !endPeriod && secondHour >= 1 && secondHour <= 12) endPeriod = startPeriod;
+            if (!startPeriod && endPeriod && firstHour >= 1 && firstHour <= 12) startPeriod = endPeriod;
+
+            let start = timePartToMinutes(first[1], first[2], startPeriod);
+            let end = timePartToMinutes(second[1], second[2], endPeriod);
+            if (start === null || end === null) return null;
+            if (end <= start && secondHour < firstHour) end += 24 * 60;
+            if (end <= start) return null;
+            return { start, end };
+        }
+
+        function formatTimetableMinute(totalMinutes) {
+            const minutes = ((Number(totalMinutes) % 1440) + 1440) % 1440;
+            const hour24 = Math.floor(minutes / 60);
+            const minute = minutes % 60;
+            const period = hour24 >= 12 ? 'PM' : 'AM';
+            const hour12 = hour24 % 12 || 12;
+            return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
+        }
+
+        function formatTimetableTimeSlot(timeSlot) {
+            const range = parseTimetableTimeRange(timeSlot);
+            return range ? `${formatTimetableMinute(range.start)} – ${formatTimetableMinute(range.end)}` : String(timeSlot || 'Time unavailable');
+        }
+
+        function getTimetableClassStates(rows, isoDate) {
+            const states = rows.map(row => ({ row, range: parseTimetableTimeRange(row.timeSlot), status: '', progress: 0 }));
+            if (isoDate !== getTodayIsoDate()) return states;
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            let nextIndex = -1;
+            states.forEach((state, index) => {
+                if (!state.range) return;
+                if (currentMinutes >= state.range.start && currentMinutes < state.range.end) {
+                    state.status = 'current';
+                    state.progress = Math.max(0, Math.min(100, ((currentMinutes - state.range.start) / (state.range.end - state.range.start)) * 100));
+                } else if (currentMinutes >= state.range.end) {
+                    state.status = 'done';
+                } else if (nextIndex === -1 || state.range.start < states[nextIndex].range.start) {
+                    nextIndex = index;
+                }
+            });
+            if (nextIndex >= 0) states[nextIndex].status = 'next';
+            return states;
+        }
+
+        function renderTimetableDay(isoDate, timetable, options = {}) {
+            const container = document.getElementById('timetableContent');
+            if (isSundayIso(isoDate)) isoDate = stepDateSkippingSunday(isoDate, 1);
+            currentTimetableDate = isoDate;
+            const day = getDayNameFromIso(isoDate);
+            const byDay = timetable?.byDay || {};
+            let rows = Array.isArray(byDay[day]) ? byDay[day].filter(row => String(row.day || day).toLowerCase() !== 'sunday') : [];
+            if (!rows.length && Array.isArray(timetable?.allRows)) {
+                rows = timetable.allRows.filter(row => String(row.day || '').toLowerCase() === day.toLowerCase() && String(row.day || '').toLowerCase() !== 'sunday');
+            }
+            rows = [...rows].sort((a, b) => {
+                const ar = parseTimetableTimeRange(a.timeSlot);
+                const br = parseTimetableTimeRange(b.timeSlot);
+                return ar && br ? ar.start - br.start : ar ? -1 : br ? 1 : 0;
+            });
+            updateTimetableDayNavigator(isoDate);
+            if (!rows.length) {
+                container.innerHTML = '<div class="result-empty">No classes scheduled.</div>';
+                return;
+            }
+
+            const states = getTimetableClassStates(rows, isoDate);
+            let focusIndex = states.findIndex(item => item.status === 'current');
+            if (focusIndex < 0) focusIndex = states.findIndex(item => item.status === 'next');
+            if (focusIndex < 0 && isoDate !== getTodayIsoDate()) focusIndex = 0;
+            const classRows = states.map((item, index) => {
+                const row = item.row;
+                const status = item.status;
+                const stateClass = status ? ` is-${status}` : '';
+                const progressStyle = status === 'current' ? ` style="--class-progress:${item.progress.toFixed(1)}%"` : '';
+                const badge = status ? `<span class="timetable-status ${status}">${status === 'current' ? 'Now' : status === 'next' ? 'Next' : 'Done'}</span>` : '';
+                const timeLabel = formatTimetableTimeSlot(row.timeSlot);
+                const meta = [row.subjectCode, row.group].filter(Boolean).map(escapeHtml).join(' · ');
+                const detailBits = [
+                    meta ? `<span><b>Code</b>${meta}</span>` : '',
+                    row.faculty ? `<span><b>Faculty</b>${escapeHtml(row.faculty)}</span>` : '',
+                    row.hall ? `<span><b>Room</b>${escapeHtml(row.hall)}</span>` : ''
+                ].filter(Boolean).join('');
+                return `<details class="timetable-class${stateClass}" data-class-index="${index}"${progressStyle}${index === focusIndex ? ' open' : ''}>
+                    <summary class="timetable-summary">
+                        <span class="timetable-time-wrap"><span class="timetable-time">${escapeHtml(timeLabel)}</span>${badge}</span>
+                        <span class="timetable-summary-subject">${escapeHtml(row.subject || 'Subject unavailable')}</span>
+                        <svg class="timetable-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </summary>
+                    <div class="timetable-details">${detailBits || '<span>Class details unavailable</span>'}</div>
+                </details>`;
+            }).join('');
+            container.innerHTML = `<section class="timetable-day"><div class="timetable-list">${classRows}</div></section>`;
+            container.querySelectorAll('details.timetable-class').forEach(detail => {
+                detail.addEventListener('toggle', () => {
+                    if (!detail.open) return;
+                    container.querySelectorAll('details.timetable-class[open]').forEach(other => {
+                        if (other !== detail) other.open = false;
+                    });
+                });
+            });
+
+            if (options.autoScroll !== false && isoDate === getTodayIsoDate() && focusIndex >= 0) {
+                requestAnimationFrame(() => {
+                    const target = container.querySelector(`[data-class-index="${focusIndex}"]`);
+                    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                });
+            }
+        }
+
+        function startTimetableClock() {
+            if (timetableClockInterval) return;
+            timetableClockInterval = window.setInterval(() => {
+                if (!sessionId) {
+                    window.clearInterval(timetableClockInterval);
+                    timetableClockInterval = null;
+                    return;
+                }
+                if (currentView === 'view-timetable' && currentTimetableDate === getTodayIsoDate() && cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) {
+                    renderTimetableDay(currentTimetableDate, cachedWeeklyTimetable, { autoScroll: false });
+                }
+            }, 60000);
+        }
+
+        async function loadTimetable() {
+            if (!sessionId) return;
+            if (isSundayIso(currentTimetableDate)) currentTimetableDate = stepDateSkippingSunday(currentTimetableDate, 1);
+            const requestId = ++timetableRequestId;
+            const content = document.getElementById('timetableContent');
+            content.innerHTML = '';
+            setFeatureMessage('timetableMessage', 'Loading…');
+            try {
+                const timetable = await ensureWeeklyTimetableLoaded();
+                if (requestId !== timetableRequestId || !sessionId) return;
+                renderTimetableDay(currentTimetableDate || getTodayIsoDate(), timetable);
+                setFeatureMessage('timetableMessage', '');
+                startTimetableClock();
+            } catch (error) {
+                if (requestId === timetableRequestId) setFeatureMessage('timetableMessage', error.message || 'Timetable unavailable.', true);
+            }
+        }
+
+        function shiftTimetableDay(direction) {
+            currentTimetableDate = stepDateSkippingSunday(currentTimetableDate || getTodayIsoDate(), Number(direction || 0) < 0 ? -1 : 1);
+            updateTimetableDayNavigator(currentTimetableDate);
+            if (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) {
+                renderTimetableDay(currentTimetableDate, cachedWeeklyTimetable);
+            } else {
+                loadTimetable();
+            }
+        }
+
+        const TOUR_STEPS = [
+            { target: '#attSubTabs .att-btn:nth-child(1)', title: 'Today · Date-wise Attendance', desc: 'This view shows your attendance for the selected date. The tour automatically opens each attendance mode as you move forward.', action: 'att-today' },
+            { target: '#dateWiseNavBlock', title: 'Move Between Dates', desc: 'Use the left and right arrows to browse attendance dates. Tap the date itself to choose a specific day.' },
+            { target: '#attSubTabs .att-btn:nth-child(2)', title: 'Monthly Attendance', desc: 'Monthly analytics show your attendance percentage month by month.', action: 'att-monthly' },
+            { target: '#attSubTabs .att-btn:nth-child(3)', title: 'Semester Analytics', desc: 'Compare attendance across semesters and review the percentage for each available subject or semester.', action: 'att-semester' },
+            { target: '#attSubTabs .att-btn:nth-child(4)', title: 'Subject-wise Attendance', desc: 'Select a date range to review the attendance recorded for individual subjects.', action: 'att-subject' },
+            { target: '#dateFilters', title: 'Choose a Date Range', desc: 'Set the start and end dates, then use Fetch to load subject-wise attendance. Your date range is remembered.' },
+            { target: '#tabBtnTimetable', title: 'Weekly Class Timetable', desc: 'The app loads the full weekly schedule once and keeps it cached for this login session.', action: 'timetable' },
+            { target: '#ttDayNavigator', title: 'Browse Each Weekday', desc: 'Tap the arrows to move one day backward or forward. The weekday heading stays clean, without dates or extra labels.', action: 'timetable-nav' },
+            { target: '#tabBtnResults', title: 'Exam Results', desc: 'Open the results area to choose a semester and see the examinations available for it.', action: 'results' },
+            { target: '#resultSemesterOptions', title: 'Choose a Semester', desc: 'These animated option chips are loaded from the college portal. The tour selects the first available semester to demonstrate the next step.', action: 'result-semester' },
+            { target: '#resultExamOptions', title: 'Choose an Examination', desc: 'The available exams update for the semester. Selecting one loads its marks automatically.', action: 'result-exam' },
+            { target: '#resultContent', title: 'Subject-wise Marks', desc: 'Each subject is shown with one clean obtained-marks circle. No extra result button is needed.', action: 'result-ready' },
+            { target: '#themePickerWrapper', title: 'Appearance Settings', desc: 'Open this control to adjust light mode, dark mode, font style and accent colour.', action: 'theme-open' },
+            { target: '#fontFamilySelect', title: 'Choose Your Font', desc: 'ADLaM Display is the default. You can switch to Outfit, DynaPuff, Figtree, Inter, Nunito, Poppins, Quicksand or Rubik any time.' },
+            { target: '#btnModeDark', title: 'Dark Appearance', desc: 'The dark theme adjusts the dashboard surfaces and text for a low-light interface.', action: 'theme-dark' },
+            { target: '#btnModeLight', title: 'Light Appearance', desc: 'Switch back to the light theme. Your original appearance setting will be restored when the tour finishes.', action: 'theme-light' },
+            { target: '#themeSwatchGrid', title: 'Accent Colour Palette', desc: 'Choose from the available accent colours. The tour previews a colour and restores your original preference at the end.', action: 'theme-accent' },
+            { target: '#topProfileBadge', title: 'Your Student Profile', desc: 'The circular photo opens your profile details. Click the GL Bajaj logo any time to replay this complete feature tour.', action: 'profile' }
+        ];
+
+        function waitForTourCondition(condition, timeoutMs = 8000, intervalMs = 120) {
+            const started = Date.now();
+            return new Promise(resolve => {
+                const check = () => {
+                    let ready = false;
+                    try { ready = Boolean(condition()); } catch (_) {}
+                    if (ready) return resolve(true);
+                    if (Date.now() - started >= timeoutMs) return resolve(false);
+                    setTimeout(check, intervalMs);
+                };
+                check();
+            });
+        }
+
+        function clickTourControl(selector) {
+            const element = document.querySelector(selector);
+            if (!element || element.disabled) return false;
+            element.click();
+            return true;
+        }
+
+        async function runTourStepAction(action) {
+            switch (action) {
+                case 'att-today':
+                    clickTourControl('#tabBtnAttendance');
+                    clickTourControl('#attSubTabs .att-btn:nth-child(1)');
+                    await waitForTourCondition(() => document.getElementById('attLoading')?.classList.contains('hidden'), 7000);
+                    break;
+                case 'att-monthly':
+                    clickTourControl('#attSubTabs .att-btn:nth-child(2)');
+                    await waitForTourCondition(() => document.getElementById('attLoading')?.classList.contains('hidden'), 7000);
+                    break;
+                case 'att-semester':
+                    clickTourControl('#attSubTabs .att-btn:nth-child(3)');
+                    await waitForTourCondition(() => document.getElementById('attLoading')?.classList.contains('hidden'), 7000);
+                    break;
+                case 'att-subject':
+                    clickTourControl('#attSubTabs .att-btn:nth-child(4)');
+                    await waitForTourCondition(() => document.getElementById('attLoading')?.classList.contains('hidden'), 7000);
+                    break;
+                case 'timetable':
+                    clickTourControl('#tabBtnTimetable');
+                    await waitForTourCondition(() => !/syncing/i.test(document.getElementById('timetableMessage')?.textContent || ''), 10000);
+                    break;
+                case 'timetable-nav': {
+                    const originalDate = currentTimetableDate || getTodayIsoDate();
+                    clickTourControl('#ttDayNavigator .tt-day-arrow:first-child');
+                    await new Promise(resolve => setTimeout(resolve, 280));
+                    clickTourControl('#ttDayNavigator .tt-day-arrow:last-child');
+                    currentTimetableDate = originalDate;
+                    if (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) renderTimetableDay(originalDate, cachedWeeklyTimetable);
+                    break;
+                }
+                case 'results':
+                    clickTourControl('#tabBtnResults');
+                    await waitForTourCondition(() => resultOptionsLoaded || resultSemesterOptions.length > 0, 12000);
+                    break;
+                case 'result-semester': {
+                    const firstSemester = document.querySelector('#resultSemesterOptions .option-chip');
+                    if (firstSemester) {
+                        firstSemester.click();
+                        await waitForTourCondition(() => resultExamOptions.length > 0 || /no examinations|could not be loaded/i.test(document.getElementById('resultMessage')?.textContent || ''), 12000);
+                    }
+                    break;
+                }
+                case 'result-exam': {
+                    const firstExam = document.querySelector('#resultExamOptions .option-chip');
+                    if (firstExam) firstExam.click();
+                    await waitForTourCondition(() => !isResultLoading && !document.getElementById('resultContent')?.classList.contains('hidden'), 18000);
+                    break;
+                }
+                case 'result-ready':
+                    await waitForTourCondition(() => !isResultLoading, 18000);
+                    break;
+                case 'theme-open': {
+                    const popover = document.getElementById('themePopover');
+                    if (popover && !popover.classList.contains('open')) clickTourControl('#themeTriggerBtn');
+                    break;
+                }
+                case 'theme-dark':
+                    clickTourControl('#btnModeDark');
+                    break;
+                case 'theme-light':
+                    clickTourControl('#btnModeLight');
+                    break;
+                case 'theme-accent': {
+                    if (!document.getElementById('themePopover')?.classList.contains('open')) clickTourControl('#themeTriggerBtn');
+                    clickTourControl('.theme-swatch[data-theme-mode="1"]');
+                    if (!document.getElementById('themePopover')?.classList.contains('open')) clickTourControl('#themeTriggerBtn');
+                    break;
+                }
+                case 'profile':
+                    clickTourControl('#topProfileBadge');
+                    await waitForTourCondition(() => profileLoaded || !sessionId, 9000);
+                    break;
+            }
+        }
+
+        async function checkOnboarding() {
+            if (!sessionId || onboardingVisible) return;
+            try {
+                const response = await fetch(`${API_BASE}/onboarding?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+                const data = await response.json();
+                if (!response.ok || !data.success || data.completed || data.dismissed) return;
+                startOnboardingTour(false);
+            } catch (_) {}
+        }
+
+        function startOnboardingTour(force = true) {
+            if (!sessionId || onboardingVisible) return;
+            tourThemeSnapshot = {
+                dark: document.body.classList.contains('dark-mode'),
+                darkStorage: localStorage.getItem(DARK_MODE_KEY),
+                themeStorage: localStorage.getItem(THEME_PREF_KEY),
+                themeIndex: sessionStorage.getItem('glb_last_theme_idx'),
+                font: localStorage.getItem(FONT_STORAGE_KEY)
+            };
+            if (currentView !== 'view-attendance') {
+                switchMainTab('view-attendance', document.getElementById('tabBtnAttendance'), false);
+            }
+            const popover = document.getElementById('themePopover');
+            if (popover) popover.classList.remove('open');
+            currentTourStep = 0;
+            tourActionStep = -1;
+            tourRenderToken++;
+            onboardingVisible = true;
+            document.getElementById('tourOverlay').classList.add('active');
+            document.getElementById('tourPopover').classList.add('active');
+            renderTourStep();
+        }
+
+        function stepOnboardingTour(delta) {
+            if (!onboardingVisible) return;
+            currentTourStep += Number(delta || 0);
+            if (currentTourStep < 0) currentTourStep = 0;
+            if (currentTourStep >= TOUR_STEPS.length) {
+                endOnboardingTour(true);
+                return;
+            }
+            renderTourStep();
+        }
+
+        async function renderTourStep() {
+            const token = ++tourRenderToken;
+            document.querySelectorAll('.tour-highlight-target').forEach(element => element.classList.remove('tour-highlight-target'));
+            const topNav = document.querySelector('.top-nav');
+            if (topNav) topNav.classList.remove('tour-elevated');
+
+            const stepIndex = currentTourStep;
+            const step = TOUR_STEPS[stepIndex];
+            const popover = document.getElementById('tourPopover');
+            if (!step || !popover) return;
+            document.getElementById('tourStepCounter').textContent = `Step ${stepIndex + 1} of ${TOUR_STEPS.length}`;
+            document.getElementById('tourStepTitle').textContent = step.title;
+            document.getElementById('tourStepDesc').textContent = step.desc;
+            document.getElementById('tourBtnPrev').style.visibility = stepIndex === 0 ? 'hidden' : 'visible';
+            document.getElementById('tourBtnNext').textContent = stepIndex === TOUR_STEPS.length - 1 ? 'Finish' : 'Next';
+            popover.style.transform = 'none';
+
+            if (step.action && tourActionStep !== stepIndex) {
+                tourActionStep = stepIndex;
+                await runTourStepAction(step.action);
+            }
+            if (!onboardingVisible || token !== tourRenderToken) return;
+
+            const target = document.querySelector(step.target);
+            if (target) {
+                target.classList.add('tour-highlight-target');
+                if (target.closest('.top-nav') && topNav) topNav.classList.add('tour-elevated');
+                try { target.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'nearest' }); } catch (_) {}
+                await new Promise(resolve => requestAnimationFrame(resolve));
+                if (!onboardingVisible || token !== tourRenderToken) return;
+                const rect = target.getBoundingClientRect();
+                const popRect = popover.getBoundingClientRect();
+                const margin = 12;
+                let top = rect.bottom + 14;
+                if (top + popRect.height > window.innerHeight - margin) top = rect.top - popRect.height - 14;
+                top = Math.max(margin, Math.min(top, window.innerHeight - popRect.height - margin));
+                let left = Math.max(margin, Math.min(rect.left, window.innerWidth - popRect.width - margin));
+                if (rect.right > window.innerWidth - popRect.width && rect.left > window.innerWidth / 2) left = Math.max(margin, rect.right - popRect.width);
+                popover.style.top = `${top}px`;
+                popover.style.left = `${left}px`;
+            } else {
+                popover.style.top = '50%';
+                popover.style.left = '50%';
+                popover.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+
+        async function saveOnboardingUpdate(payload) {
+            if (!sessionId) return;
+            try {
+                await fetch(`${API_BASE}/onboarding`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, completed: Boolean(payload.completed), dismissed: Boolean(payload.dismissed) })
+                });
+            } catch (_) {}
+        }
+
+        function endOnboardingTour(completed = false) {
+            tourRenderToken++;
+            document.querySelectorAll('.tour-highlight-target').forEach(element => element.classList.remove('tour-highlight-target'));
+            document.querySelector('.top-nav')?.classList.remove('tour-elevated');
+            document.getElementById('tourOverlay').classList.remove('active');
+            document.getElementById('tourPopover').classList.remove('active');
+            document.getElementById('themePopover')?.classList.remove('open');
+            onboardingVisible = false;
+            if (tourThemeSnapshot) {
+                setDarkMode(tourThemeSnapshot.dark, false);
+                const originalThemeMode = tourThemeSnapshot.themeStorage || 'rainbow';
+                if (originalThemeMode === 'rainbow' && tourThemeSnapshot.themeIndex !== null) {
+                    const originalIndex = Number(tourThemeSnapshot.themeIndex);
+                    if (Number.isInteger(originalIndex) && originalIndex >= 0 && originalIndex < PORTAL_THEMES.length) {
+                        renderThemePalette(originalIndex, true);
+                    } else {
+                        selectThemeMode('rainbow', false);
+                    }
+                } else {
+                    selectThemeMode(originalThemeMode, false);
+                }
+                if (tourThemeSnapshot.themeStorage === null) localStorage.removeItem(THEME_PREF_KEY);
+                else localStorage.setItem(THEME_PREF_KEY, tourThemeSnapshot.themeStorage);
+                if (tourThemeSnapshot.darkStorage === null) localStorage.removeItem(DARK_MODE_KEY);
+                else localStorage.setItem(DARK_MODE_KEY, tourThemeSnapshot.darkStorage);
+                if (tourThemeSnapshot.themeIndex === null) sessionStorage.removeItem('glb_last_theme_idx');
+                else sessionStorage.setItem('glb_last_theme_idx', tourThemeSnapshot.themeIndex);
+                setFontFamily(tourThemeSnapshot.font || 'ADLaM Display', false);
+                if (tourThemeSnapshot.font === null) localStorage.removeItem(FONT_STORAGE_KEY);
+                else localStorage.setItem(FONT_STORAGE_KEY, tourThemeSnapshot.font);
+                tourThemeSnapshot = null;
+            }
+            saveOnboardingUpdate({ completed: Boolean(completed), dismissed: !completed });
+        }
+
+        window.addEventListener('resize', () => {
+            if (onboardingVisible) renderTourStep();
+            const semesterRail = document.getElementById('resultSemesterOptions');
+            const examRail = document.getElementById('resultExamOptions');
+            if (semesterRail) syncOptionIndicator(semesterRail);
+            if (examRail) syncOptionIndicator(examRail);
+        });
 
         document.getElementById('dateFrom').addEventListener('change', () => {
             const from = document.getElementById('dateFrom').value;
