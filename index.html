@@ -893,6 +893,23 @@
             .auth-loader-card,.auth-loader-progress span,.att-skeleton-head i,.att-skeleton-row i,.view-section:not(.hidden) .card,.view-section:not(.hidden) .feature-heading,.view-section:not(.hidden) .filter-row,.view-section:not(.hidden) .feature-filter-grid,.table-responsive:not(.hidden) .data-table tbody tr,.attendance-gauge-card,.result-subject-card,.timetable-list > * { animation:none !important; }
         }
 
+
+        /* Smooth six-day timetable navigation and staggered row reveal. */
+        @keyframes timetableDayEnter {
+            from { opacity:0; translate:0 9px; }
+            to { opacity:1; translate:0 0; }
+        }
+        @keyframes timetableItemEnter {
+            from { opacity:0; translate:0 7px; }
+            to { opacity:1; translate:0 0; }
+        }
+        #timetableContent .timetable-day-enter { animation:timetableDayEnter .28s cubic-bezier(.2,.75,.25,1) both; }
+        #timetableContent .timetable-list > * { animation:timetableItemEnter .34s cubic-bezier(.2,.75,.25,1) both; animation-delay:calc(var(--tt-order, 0) * 22ms); }
+        #timetableContent .timetable-break { min-height:36px; }
+        @media(prefers-reduced-motion:reduce) {
+            #timetableContent .timetable-day-enter,
+            #timetableContent .timetable-list > * { animation:none !important; }
+        }
 </style>
 </head>
 <body>
@@ -1426,6 +1443,27 @@
                 d.setDate(d.getDate() + direction);
             } while (d.getDay() === 0);
             return toIsoDateLocal(d);
+        }
+
+        // Timetable navigation is a six-day weekly loop (Monday-Saturday),
+        // anchored to the real calendar week so returning to today's weekday
+        // restores the exact date and its live Now/Done/Next states.
+        function getTimetableWeekMondayIso(isoStr = getTodayIsoDate()) {
+            const date = parseIsoDateLocal(isoStr);
+            const weekday = date.getDay();
+            date.setDate(date.getDate() + (weekday === 0 ? 1 : 1 - weekday));
+            return toIsoDateLocal(date);
+        }
+
+        function getTimetableWeekdayIndex(isoStr) {
+            const weekday = parseIsoDateLocal(isoStr).getDay();
+            return weekday === 0 ? 0 : weekday - 1;
+        }
+
+        function getTimetableLoopDate(index, weekMondayIso = getTimetableWeekMondayIso()) {
+            const date = parseIsoDateLocal(weekMondayIso);
+            date.setDate(date.getDate() + ((Number(index) % 6) + 6) % 6);
+            return toIsoDateLocal(date);
         }
 
         function openDatePicker() {
@@ -3850,24 +3888,26 @@
 
                 if (previousRange) {
                     const rawGap = start - previousRange.end;
-                    // Normalize the portal's occasional +/-1 minute drift to the
-                    // intended timetable rhythm: continuous periods, 10-minute
-                    // breaks, 50-minute lunch, or a 100-minute Library + Lunch span.
+                    // Normalize only known timetable boundaries. Do not shave an
+                    // arbitrary minute from a Library/Lunch span: that created
+                    // artificial 9+1 minute fragments in the rendered schedule.
                     const canonicalGaps = [0, 10, 50, 100];
-                    const canonicalGap = canonicalGaps.find(value => Math.abs(rawGap - value) <= 1);
-                    if (canonicalGap !== undefined) {
-                        start = previousRange.end + canonicalGap;
-                    } else if (rawGap > 1) {
-                        // For irregular/free periods preserve the gap, but remove
-                        // the portal's one-minute start offset when present.
-                        start = Math.max(previousRange.end, start - 1);
-                    }
+                    let bestGap = null;
+                    let bestDelta = Infinity;
+                    canonicalGaps.forEach(value => {
+                        const delta = Math.abs(rawGap - value);
+                        if (delta <= 1 && delta < bestDelta) {
+                            bestGap = value;
+                            bestDelta = delta;
+                        }
+                    });
+                    if (bestGap !== null) start = previousRange.end + bestGap;
                 }
 
-                // Teaching periods in this timetable are 50 minutes. Correct
-                // 49/51-minute portal ranges without changing longer lab blocks.
+                // Every scheduled class/lecture block is exactly 50 minutes.
+                // This also corrects portal durations of 49 or 51 minutes.
                 const duration = end - start;
-                if (duration >= 49 && duration <= 51) end = start + 50;
+                if (Math.abs(duration - 50) <= 2) end = start + 50;
 
                 const range = { start, end };
                 previousRange = range;
@@ -3894,7 +3934,9 @@
             const merged = [];
             sorted.forEach(interval => {
                 const last = merged[merged.length - 1];
-                if (last && interval.start <= last.end) {
+                // A one-minute seam is portal rounding noise, not a separate
+                // free-time block. Merge it so a 10-minute Break stays one block.
+                if (last && interval.start <= last.end + 1) {
                     last.end = Math.max(last.end, interval.end);
                     last.duration = last.end - last.start;
                 } else {
@@ -3929,34 +3971,100 @@
 
         function classifyTimetableGap(start, end, isShared = false) {
             const duration = end - start;
-            if (isShared && duration >= 45 && duration <= 55) return { label: 'Lunch Break', gapClass: 'lunch' };
-            if (isShared && duration >= 8 && duration <= 12) return { label: 'Break', gapClass: 'short' };
+            if (Math.abs(duration - 10) <= 2) return { label: 'Break', gapClass: 'short' };
+            if (Math.abs(duration - 50) <= 2 && isShared) return { label: 'Lunch Break', gapClass: 'lunch' };
             return { label: 'Library', gapClass: 'library' };
         }
 
         function appendTimetableGapPieces(timeline, start, end, commonIntervals) {
-            if (end - start < 5) return;
-            const overlaps = commonIntervals
-                .map(interval => ({ start: Math.max(start, interval.start), end: Math.min(end, interval.end) }))
-                .filter(interval => interval.end - interval.start >= 5)
-                .sort((a, b) => a.start - b.start);
+            const duration = end - start;
+            if (duration < 5) return;
 
-            let cursor = start;
-            overlaps.forEach(interval => {
-                if (interval.start > cursor) {
-                    const part = classifyTimetableGap(cursor, interval.start, false);
-                    timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: cursor, end: interval.start, duration: interval.start - cursor });
+            const sharedLunch = (commonIntervals || [])
+                .filter(interval => Math.abs((interval.end - interval.start) - 50) <= 3)
+                .map(interval => {
+                    const overlapStart = Math.max(start, interval.start);
+                    const overlapEnd = Math.min(end, interval.end);
+                    return { start: interval.start, end: interval.end, overlap: overlapEnd - overlapStart };
+                })
+                .filter(interval => interval.overlap >= 45)
+                .sort((a, b) => b.overlap - a.overlap || a.start - b.start)[0];
+
+            const sharedBreak = (commonIntervals || [])
+                .filter(interval => Math.abs((interval.end - interval.start) - 10) <= 2)
+                .map(interval => {
+                    const overlapStart = Math.max(start, interval.start);
+                    const overlapEnd = Math.min(end, interval.end);
+                    return { start: interval.start, end: interval.end, overlap: overlapEnd - overlapStart };
+                })
+                .filter(interval => interval.overlap >= 8)
+                .sort((a, b) => b.overlap - a.overlap || a.start - b.start)[0];
+
+            const pushGap = (label, gapClass, gapStart, minutes) => {
+                if (minutes < 5) return;
+                const normalizedDuration = label === 'Break' ? 10 : 50;
+                timeline.push({
+                    kind: 'gap', label, gapClass,
+                    start: gapStart,
+                    end: gapStart + normalizedDuration,
+                    duration: normalizedDuration
+                });
+            };
+
+            // A daily short gap is always one complete 10-minute Break. Never
+            // split it into a 9-minute Break plus a 1-minute Library fragment.
+            if (Math.abs(duration - 10) <= 2) {
+                pushGap('Break', 'short', start, 10);
+                return;
+            }
+
+            // A 50-minute daily gap is Lunch only when it matches the shared
+            // weekday lunch interval; otherwise it is the optional Library.
+            if (Math.abs(duration - 50) <= 2) {
+                const isLunch = Boolean(sharedLunch);
+                pushGap(isLunch ? 'Lunch Break' : 'Library', isLunch ? 'lunch' : 'library', start, 50);
+                return;
+            }
+
+            // Longer free periods can consist of a shared 50-minute Lunch and
+            // one optional 50-minute Library. Prefer the common lunch's position
+            // (for example Wed 11:50–1:30 => Library 11:50–12:40 + Lunch 12:40–1:30).
+            if (Math.abs(duration - 100) <= 3) {
+                let lunchStart = end - 50;
+                if (sharedLunch) {
+                    if (Math.abs(sharedLunch.end - end) <= 1) lunchStart = end - 50;
+                    else if (Math.abs(sharedLunch.start - start) <= 1) lunchStart = start;
+                    else lunchStart = Math.max(start, Math.min(end - 50, sharedLunch.start));
                 }
-                const partStart = Math.max(cursor, interval.start);
-                if (interval.end > partStart) {
-                    const part = classifyTimetableGap(partStart, interval.end, true);
-                    timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: partStart, end: interval.end, duration: interval.end - partStart });
-                    cursor = interval.end;
+                const libraryBefore = lunchStart - start >= 45;
+                const libraryAfter = end - (lunchStart + 50) >= 45;
+                if (libraryBefore) pushGap('Library', 'library', start, 50);
+                pushGap('Lunch Break', 'lunch', lunchStart, 50);
+                if (libraryAfter) pushGap('Library', 'library', lunchStart + 50, 50);
+                // A 100-minute gap contains exactly one Library and one Lunch.
+                // If the shared lunch interval is at either edge, put Library on
+                // the opposite side rather than silently dropping it.
+                if (!libraryBefore && !libraryAfter) {
+                    const alternateLibraryStart = lunchStart <= start + 2 ? start + 50 : start;
+                    pushGap('Library', 'library', alternateLibraryStart, 50);
                 }
-            });
-            if (end > cursor) {
-                const part = classifyTimetableGap(cursor, end, false);
-                timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: cursor, end, duration: end - cursor });
+                return;
+            }
+
+            // Handle a combined Library + common Break interval (60 minutes).
+            // Place the shared 10-minute Break at its common weekday position.
+            if (Math.abs(duration - 60) <= 3 && sharedBreak) {
+                const breakStart = Math.max(start, Math.min(end - 10, sharedBreak.start));
+                if (breakStart - start >= 45) pushGap('Library', 'library', start, 50);
+                pushGap('Break', 'short', breakStart, 10);
+                if (end - (breakStart + 10) >= 45) pushGap('Library', 'library', breakStart + 10, 50);
+                return;
+            }
+
+            // Unclassified minute fragments are deliberately ignored; only the
+            // standard 10-minute Break and 50-minute periods are displayed.
+            if (Math.abs(duration - 50) <= 5) {
+                pushGap(sharedLunch ? 'Lunch Break' : 'Library', sharedLunch ? 'lunch' : 'library', start, 50);
             }
         }
 
@@ -3964,12 +4072,21 @@
             const timeline = [];
             const normalized = getNormalizedTimetableRanges(rows);
             const commonIntervals = Array.isArray(weeklyGapMap?.commonIntervals) ? weeklyGapMap.commonIntervals : [];
+            const renderedGapTypes = new Set();
             let periodNumber = 0;
             for (let index = 0; index < normalized.length; index++) {
                 const { row, range } = normalized[index];
                 const previousRange = index > 0 ? normalized[index - 1].range : null;
                 if (previousRange && range && range.start > previousRange.end) {
-                    appendTimetableGapPieces(timeline, previousRange.end, range.start, commonIntervals);
+                    const gapPieces = [];
+                    appendTimetableGapPieces(gapPieces, previousRange.end, range.start, commonIntervals);
+                    gapPieces.forEach(gap => {
+                        // The weekly timetable has one common Break and Lunch,
+                        // plus at most one optional Library block per day.
+                        if (renderedGapTypes.has(gap.label)) return;
+                        renderedGapTypes.add(gap.label);
+                        timeline.push(gap);
+                    });
                 }
                 const explicitPeriod = extractTimetablePeriod(row);
                 periodNumber++;
@@ -4024,12 +4141,13 @@
             const stateByRow = new Map(rows.map((row, index) => [row, states[index]]));
             const weeklyGapMap = getWeeklyTimetableGapMap(timetable);
             const timeline = buildTimetableTimeline(rows, weeklyGapMap);
-            const classRows = timeline.map(item => {
+            const classRows = timeline.map((item, timelineIndex) => {
+                const itemMotion = ` style="--tt-order:${timelineIndex}"`;
                 if (item.kind === 'gap') {
                     const start = formatTimetableMinute(item.start);
                     const end = formatTimetableMinute(item.end);
                     const breakClass = item.gapClass ? ` ${item.gapClass}` : '';
-                    return `<div class="timetable-break${breakClass}" aria-label="${item.label}, ${item.duration} minutes">
+                    return `<div class="timetable-break${breakClass}"${itemMotion} aria-label="${item.label}, ${item.duration} minutes">
                         <span class="timetable-break-label">${escapeHtml(item.label)}</span>
                         <span class="timetable-break-time">${start} – ${end}</span>
                         <span class="timetable-break-duration">${item.duration} min</span>
@@ -4040,7 +4158,7 @@
                 const state = stateByRow.get(row) || { status: '', progress: 0 };
                 const status = state.status;
                 const stateClass = status ? ` is-${status}` : '';
-                const progressStyle = status === 'current' ? ` style="--class-progress:${state.progress.toFixed(1)}%"` : '';
+                const rowMotion = ` style="--tt-order:${timelineIndex}${status === 'current' ? `;--class-progress:${state.progress.toFixed(1)}%` : ''}"`;
                 const badge = status ? `<span class="timetable-status ${status}">${status === 'current' ? 'Now' : status === 'done' ? 'Done' : 'Next'}</span>` : '';
                 const timeLabel = formatTimetableTimeSlot(row.timeSlot, item.range);
                 const meta = [row.subjectCode, row.group].filter(Boolean).map(escapeHtml).join(' · ');
@@ -4053,7 +4171,7 @@
                 const isCurrent = status === 'current' && isoDate === getTodayIsoDate();
                 const autoOpenCurrent = isCurrent;
                 const keepOpen = !isCurrent && Array.isArray(options.preserveOpenIndices) && options.preserveOpenIndices.includes(rowIndex);
-                return `<details class="timetable-class${stateClass}" data-class-index="${rowIndex}"${progressStyle}${autoOpenCurrent || keepOpen ? ' open' : ''}>
+                return `<details class="timetable-class${stateClass}" data-class-index="${rowIndex}"${rowMotion}${autoOpenCurrent || keepOpen ? ' open' : ''}>
                     <summary class="timetable-summary">
                         <span class="timetable-time-wrap"><span class="timetable-period-tag">${escapeHtml(item.period)}</span><span class="timetable-time">${escapeHtml(timeLabel)}</span>${badge}</span>
                         <span class="timetable-summary-subject">${escapeHtml(row.subject || 'Subject unavailable')}</span>
@@ -4062,7 +4180,7 @@
                     <div class="timetable-details">${detailBits || '<span>Class details unavailable</span>'}</div>
                 </details>`;
             }).join('');
-            container.innerHTML = `<section class="timetable-day"><div class="timetable-list">${classRows}</div></section>`;
+            container.innerHTML = `<section class="timetable-day timetable-day-enter"><div class="timetable-list">${classRows}</div></section>`;
             container.querySelectorAll('details.timetable-class').forEach(detail => {
                 detail.addEventListener('toggle', () => {
                     if (!detail.open) return;
@@ -4133,12 +4251,23 @@
         }
 
         function shiftTimetableDay(direction) {
-            const nextDate = stepDateSkippingSunday(currentTimetableDate || getTodayIsoDate(), Number(direction || 0) < 0 ? -1 : 1);
+            const todayIso = getTodayIsoDate();
+            const weekMonday = getTimetableWeekMondayIso(todayIso);
+            const baseDate = currentTimetableDate || todayIso;
+            const currentIndex = getTimetableWeekdayIndex(baseDate);
+            const step = Number(direction || 0) < 0 ? -1 : 1;
+            const nextIndex = (currentIndex + step + 6) % 6;
+            const nextDate = getTimetableLoopDate(nextIndex, weekMonday);
+
             currentTimetableDate = nextDate;
             updateTimetableDayNavigator(nextDate);
+            const content = document.getElementById('timetableContent');
+            content?.classList.remove('tt-navigate-prev', 'tt-navigate-next');
+            content?.classList.add(step < 0 ? 'tt-navigate-prev' : 'tt-navigate-next');
+
             if (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) {
                 renderTimetableDay(nextDate, cachedWeeklyTimetable, { autoScroll: true });
-                if (nextDate === getTodayIsoDate()) startTimetableClock();
+                if (nextDate === todayIso) startTimetableClock();
             } else {
                 loadTimetable();
             }
