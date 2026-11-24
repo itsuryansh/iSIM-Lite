@@ -825,15 +825,93 @@
             *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
         }
 
+
+        /* Consistent loading, entrance, and data-refresh motion across the dashboard. */
+        .auth-loader-card { width:min(440px,calc(100vw - 36px)); display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 26px; border:1px solid rgba(148,163,184,.22); border-radius:22px; background:rgba(255,255,255,.94); box-shadow:0 24px 80px rgba(15,23,42,.14); }
+        .auth-loader-sub { max-width:340px; color:var(--text-muted); font-size:12px; font-weight:650; text-align:center; line-height:1.5; }
+        .auth-loader-progress { width:min(300px,100%); height:5px; margin-top:7px; border-radius:99px; overflow:hidden; background:#e8edf5; display:none; }
+        .auth-loader-progress span { display:block; width:38%; height:100%; border-radius:inherit; background:linear-gradient(90deg,#6366f1,#22c55e,#6366f1); background-size:200% 100%; animation:authProgress 1.5s ease-in-out infinite; }
+        .auth-loader-stages { display:none; width:min(340px,100%); grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; margin-top:3px; }
+        .auth-stage { padding:7px 5px; border:1px solid #e5eaf0; border-radius:9px; color:#94a3b8; font-size:10px; font-weight:850; text-align:center; letter-spacing:.3px; transition:background .2s ease,color .2s ease,border-color .2s ease,transform .2s ease; }
+        .auth-stage.active { color:var(--primary); background:#eef2ff; border-color:#c7d2fe; transform:translateY(-1px); }
+        .auth-stage.complete { color:#047857; background:#ecfdf5; border-color:#a7f3d0; }
+        .page-overlay.auth-mode { background:rgba(241,245,249,.88); }
+        .page-overlay.auth-mode .auth-loader-card { animation:authCardEnter .35s var(--ease-ui, ease) both; }
+        .page-overlay.auth-mode .auth-loader-progress,.page-overlay.auth-mode .auth-loader-stages { display:grid; }
+        .page-overlay.auth-mode #overlaySpinner { width:42px; height:42px; border-width:4px; }
+        .page-overlay.auth-success .auth-loader-card { border-color:rgba(16,185,129,.36); box-shadow:0 24px 80px rgba(16,185,129,.13); }
+        .page-overlay.auth-success #overlaySpinner { border-color:rgba(16,185,129,.18); border-top-color:#10b981; }
+        body.dark-mode .auth-loader-card { background:rgba(15,23,42,.97); border-color:#334155; }
+        body.dark-mode .auth-loader-sub { color:#94a3b8; }
+        body.dark-mode .auth-loader-progress { background:#334155; }
+        body.dark-mode .auth-stage { border-color:#334155; color:#94a3b8; }
+        body.dark-mode .auth-stage.active { color:#c7d2fe; background:rgba(79,70,229,.18); border-color:#6366f1; }
+        body.dark-mode .auth-stage.complete { color:#6ee7b7; background:rgba(16,185,129,.12); border-color:#047857; }
+        .att-analytics-skeleton { display:grid; width:min(640px,100%); gap:10px; margin-top:4px; }
+        .att-skeleton-head,.att-skeleton-row { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(70px,.8fr) minmax(70px,.7fr); align-items:center; gap:12px; min-height:42px; padding:9px 12px; border:1px solid #e5eaf0; border-radius:10px; background:rgba(255,255,255,.55); }
+        .att-skeleton-head { min-height:34px; background:#f8fafc; }
+        .att-skeleton-head i,.att-skeleton-row i { display:block; height:10px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
+        .att-skeleton-head i:nth-child(2),.att-skeleton-row i:nth-child(2) { width:72%; justify-self:center; }
+        .att-skeleton-head i:nth-child(3),.att-skeleton-row i:nth-child(3) { width:58%; justify-self:end; }
+        body.dark-mode .att-skeleton-head,body.dark-mode .att-skeleton-row { background:#111827; border-color:#334155; }
+        body.dark-mode .att-skeleton-head i,body.dark-mode .att-skeleton-row i { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
+        .view-section:not(.hidden) .card { animation:cardReveal .34s var(--ease-ui) both; }
+        .view-section:not(.hidden) .feature-heading { animation:softReveal .28s ease both; }
+        .view-section:not(.hidden) .filter-row:not(.hidden),.view-section:not(.hidden) .feature-filter-grid { animation:softReveal .3s var(--ease-ui) both; }
+        .table-responsive:not(.hidden) { animation:softReveal .3s var(--ease-ui) both; }
+        .data-table tbody tr { animation:rowReveal .3s var(--ease-ui) both; }
+        .data-table tbody tr:nth-child(2) { animation-delay:.035s; }
+        .data-table tbody tr:nth-child(3) { animation-delay:.07s; }
+        .data-table tbody tr:nth-child(4) { animation-delay:.105s; }
+        .data-table tbody tr:nth-child(5) { animation-delay:.14s; }
+        .attendance-gauge-card,.result-subject-card { animation:cardReveal .42s var(--ease-ui) both; }
+        .attendance-gauge-card:nth-child(2),.result-subject-card:nth-child(2) { animation-delay:.045s; }
+        .attendance-gauge-card:nth-child(3),.result-subject-card:nth-child(3) { animation-delay:.09s; }
+        .attendance-gauge-card:nth-child(4),.result-subject-card:nth-child(4) { animation-delay:.135s; }
+        .timetable-list > * { animation:rowReveal .3s var(--ease-ui) both; }
+        .timetable-list > *:nth-child(2) { animation-delay:.035s; }
+        .timetable-list > *:nth-child(3) { animation-delay:.07s; }
+        .timetable-list > *:nth-child(4) { animation-delay:.105s; }
+        .timetable-class.is-done { opacity:.48; filter:saturate(.72); }
+        .timetable-class.is-done .timetable-time,.timetable-class.is-done .timetable-summary-subject { color:var(--text-muted); }
+        .timetable-class.is-done .timetable-period-tag { opacity:.68; }
+        .timetable-break.library { border-style:dashed; border-color:rgba(99,102,241,.34); background:rgba(99,102,241,.055); }
+        .timetable-break.library .timetable-break-label,.timetable-break.library .timetable-break-duration { color:#6366f1; }
+        body.dark-mode .timetable-break.library { border-color:rgba(129,140,248,.36); background:rgba(99,102,241,.1); }
+        body.dark-mode .timetable-break.library .timetable-break-label,body.dark-mode .timetable-break.library .timetable-break-duration { color:#a5b4fc; }
+        .tt-today-badge { padding:4px 8px; border-radius:20px; background:#dcfce7; color:#15803d; font-size:9px; font-weight:900; letter-spacing:.5px; }
+        .tt-today-badge[hidden] { display:none !important; }
+        @keyframes authProgress { 0% { transform:translateX(-130%); } 100% { transform:translateX(290%); } }
+        @keyframes authCardEnter { from { opacity:0; transform:translateY(12px) scale(.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes cardReveal { from { opacity:0; transform:translateY(8px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes softReveal { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes rowReveal { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        @media(max-width:540px) {
+            .auth-loader-card { padding:23px 18px; border-radius:18px; }
+            .att-skeleton-head,.att-skeleton-row { grid-template-columns:minmax(0,1.2fr) minmax(58px,.7fr) minmax(55px,.6fr); gap:8px; padding:8px; }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            .auth-loader-card,.auth-loader-progress span,.att-skeleton-head i,.att-skeleton-row i,.view-section:not(.hidden) .card,.view-section:not(.hidden) .feature-heading,.view-section:not(.hidden) .filter-row,.view-section:not(.hidden) .feature-filter-grid,.table-responsive:not(.hidden) .data-table tbody tr,.attendance-gauge-card,.result-subject-card,.timetable-list > * { animation:none !important; }
+        }
+
 </style>
 </head>
 <body>
 
     <div id="globalTooltip" class="global-tooltip"></div>
 
-    <div class="page-overlay" id="pageOverlay">
-        <div class="spinner"></div>
-        <div class="loader-text" id="loaderText">Loading...</div>
+    <div class="page-overlay" id="pageOverlay" role="status" aria-live="polite" aria-busy="true">
+        <div class="auth-loader-card">
+            <div class="spinner" id="overlaySpinner"></div>
+            <div class="loader-text" id="loaderText">Loading...</div>
+            <div class="auth-loader-sub" id="authLoaderSub" hidden></div>
+            <div class="auth-loader-progress" aria-hidden="true"><span></span></div>
+            <div class="auth-loader-stages" aria-hidden="true">
+                <span class="auth-stage" data-auth-step="0">Connect</span>
+                <span class="auth-stage" data-auth-step="1">Verify</span>
+                <span class="auth-stage" data-auth-step="2">Prepare</span>
+            </div>
+        </div>
     </div>
 
     <div class="lightbox-modal" id="imageLightbox" onclick="closeLightbox()">
@@ -989,14 +1067,21 @@
                     </div>
 
                     <div id="attLoading" class="hidden" style="text-align:center; padding:50px 20px; font-weight: 600; color:var(--primary); display:flex; flex-direction:column; align-items:center; gap:14px; font-size: 16px;">
-                        <div class="spinner"></div>
+                        <div class="spinner" id="attLoadingSpinner"></div>
                         <div id="attLoadingStatus" style="font-weight: 800; font-size: 17px; color: var(--primary);">Synchronizing Data...</div>
                         <div id="attLoadingDate" class="badge badge-default hidden" style="font-size: 13px; padding: 6px 14px;">Date: --/--/----</div>
                         <div id="attLoadingSub" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Please wait while we communicate with the server.</div>
                         <button type="button" id="btnStopSearch" class="stop-search-btn hidden" onclick="stopAttendanceSearch()">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-                            <span >Stop Search</span>
+                            <span>Stop Search</span>
                         </button>
+                        <div id="attAnalyticsSkeleton" class="att-analytics-skeleton hidden" aria-hidden="true">
+                            <div class="att-skeleton-head"><i></i><i></i><i></i></div>
+                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
+                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
+                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
+                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
+                        </div>
                     </div>
                     
                     <div id="attTableContainer" class="table-responsive">
@@ -1052,6 +1137,7 @@
                         </button>
                         <div class="tt-day-current" aria-live="polite">
                             <strong id="ttDayName">Monday</strong>
+                            <span id="ttTodayBadge" class="tt-today-badge" hidden>Today</span>
                         </div>
                         <button type="button" class="tt-day-arrow" onclick="shiftTimetableDay(1)" title="Next day" aria-label="Next day">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
@@ -1112,7 +1198,6 @@
         let cachedWeeklyTimetableSessionId = null;
         let currentTimetableDate = isSundayIso(getTodayIsoDate()) ? stepDateSkippingSunday(getTodayIsoDate(), 1) : getTodayIsoDate();
         let timetableClockInterval = null;
-        let manuallyCollapsedCurrentTimetableClass = null;
         let isResultLoading = false;
         let onboardingVisible = false;
         let currentTourStep = 0;
@@ -1133,6 +1218,65 @@
 
         const pageOverlay = document.getElementById('pageOverlay');
         const loaderText = document.getElementById('loaderText');
+        const authLoaderSub = document.getElementById('authLoaderSub');
+        let authLoadingTimer = null;
+
+        const AUTH_LOADING_STAGES = [
+            { title: 'Connecting to College Portal…', sub: 'Preparing a secure verification request.' },
+            { title: 'Verifying Your Credentials…', sub: 'The college portal is checking your admission details and captcha.' },
+            { title: 'Preparing Your Dashboard…', sub: 'Finishing sign-in and building your student workspace.' }
+        ];
+
+        function setAuthLoadingStage(index) {
+            const safeIndex = Math.max(0, Math.min(AUTH_LOADING_STAGES.length - 1, Number(index) || 0));
+            const stage = AUTH_LOADING_STAGES[safeIndex];
+            if (loaderText) loaderText.textContent = stage.title;
+            if (authLoaderSub) {
+                authLoaderSub.textContent = stage.sub;
+                authLoaderSub.hidden = false;
+            }
+            document.querySelectorAll('.auth-stage').forEach((element, stageIndex) => {
+                element.classList.toggle('active', stageIndex === safeIndex);
+                element.classList.toggle('complete', stageIndex < safeIndex);
+            });
+        }
+
+        function startAuthLoading() {
+            if (authLoadingTimer) window.clearInterval(authLoadingTimer);
+            pageOverlay.classList.remove('auth-success');
+            pageOverlay.setAttribute('aria-busy', 'true');
+            pageOverlay.classList.add('active', 'auth-mode');
+            setAuthLoadingStage(0);
+            let stageIndex = 0;
+            authLoadingTimer = window.setInterval(() => {
+                stageIndex = Math.min(stageIndex + 1, AUTH_LOADING_STAGES.length - 1);
+                setAuthLoadingStage(stageIndex);
+                if (stageIndex === AUTH_LOADING_STAGES.length - 1 && authLoadingTimer) {
+                    window.clearInterval(authLoadingTimer);
+                    authLoadingTimer = null;
+                }
+            }, 1050);
+        }
+
+        async function finishAuthLoading(verified = false) {
+            if (authLoadingTimer) {
+                window.clearInterval(authLoadingTimer);
+                authLoadingTimer = null;
+            }
+            if (verified) {
+                if (loaderText) loaderText.textContent = 'Login Verified';
+                if (authLoaderSub) authLoaderSub.textContent = 'Your student dashboard is ready.';
+                document.querySelectorAll('.auth-stage').forEach(element => {
+                    element.classList.remove('active');
+                    element.classList.add('complete');
+                });
+                pageOverlay.classList.add('auth-success');
+                await new Promise(resolve => window.setTimeout(resolve, 220));
+            }
+            pageOverlay.classList.remove('active', 'auth-mode', 'auth-success');
+            if (authLoaderSub) authLoaderSub.hidden = true;
+            pageOverlay.setAttribute('aria-busy', 'false');
+        }
         const statusMsg = document.getElementById('statusMsg');
         const loginError = document.getElementById('loginError');
 
@@ -1496,13 +1640,25 @@
             }
         }
 
-        function setLoadingProgress(statusText, checkedDateStr = null, subText = '') {
+        function setLoadingProgress(statusText, checkedDateStr = null, subText = '', layoutType = '') {
             const loadingBox = document.getElementById('attLoading');
             const statusEl = document.getElementById('attLoadingStatus');
             const dateEl = document.getElementById('attLoadingDate');
             const subEl = document.getElementById('attLoadingSub');
+            const spinner = document.getElementById('attLoadingSpinner');
+            const analyticsSkeleton = document.getElementById('attAnalyticsSkeleton');
+            const isAnalyticsLoad = ['monthly', 'semester', 'subject'].includes(String(layoutType || '').toLowerCase());
 
-            if (loadingBox) loadingBox.classList.remove('hidden');
+            if (loadingBox) {
+                loadingBox.classList.remove('hidden');
+                loadingBox.setAttribute('aria-busy', 'true');
+            }
+            if (spinner) spinner.classList.toggle('hidden', isAnalyticsLoad);
+            if (analyticsSkeleton) analyticsSkeleton.classList.toggle('hidden', !isAnalyticsLoad);
+            const loadingSpinner = loadingBox?.querySelector(':scope > .spinner');
+            if (loadingSpinner) loadingSpinner.classList.toggle('hidden', isAnalyticsLoad);
+            const tableContainer = document.getElementById('attTableContainer');
+            if (tableContainer) tableContainer.setAttribute('aria-busy', 'true');
             if (statusEl) statusEl.innerText = statusText || 'Synchronizing Data...';
             if (dateEl) {
                 if (checkedDateStr) {
@@ -2655,8 +2811,8 @@
                 setLoginError('Captcha is not ready yet. Please reload the captcha and try again.');
                 return;
             }
-            loaderText.innerText = "Authenticating with College Portal...";
-            pageOverlay.classList.add('active');
+            startAuthLoading();
+            let loginVerified = false;
             
             try {
                 const res = await fetch(`${API_BASE}/login`, {
@@ -2670,6 +2826,8 @@
                 });
                 const data = await res.json();
                 if (data.success) {
+                    loginVerified = true;
+                    setAuthLoadingStage(2);
                     localStorage.setItem(SESSION_STORAGE_KEY, sessionId);
                     localStorage.setItem('isim_lite_user_id', document.getElementById('admNumber').value.trim().toUpperCase());
                     cachedWeeklyTimetable = null;
@@ -2703,7 +2861,7 @@
             } catch(e) {
                 setLoginError('Server connection lost.');
             } finally {
-                pageOverlay.classList.remove('active');
+                await finishAuthLoading(loginVerified);
             }
         });
 
@@ -2918,7 +3076,7 @@
             attendanceLoaded = false;
             document.getElementById('attTableContainer').classList.add('hidden');
             document.getElementById('todaySummaryBox').classList.add('hidden');
-            setLoadingProgress('Synchronizing Data...', null, 'Fetching attendance analytics from portal...');
+            setLoadingProgress('Loading attendance analytics…', null, `Preparing ${type} attendance from the college portal…`, type);
 
             try {
                 const res = await apiFetch(`${API_BASE}/attendance/${type}`, {
@@ -2980,6 +3138,10 @@
             const head = document.getElementById('attThead');
             const body = document.getElementById('attTbody');
             const table = head.closest('table');
+            const tableContainer = document.getElementById('attTableContainer');
+            if (tableContainer) tableContainer.setAttribute('aria-busy', 'false');
+            const loadingBox = document.getElementById('attLoading');
+            if (loadingBox) loadingBox.setAttribute('aria-busy', 'false');
             if (table) {
                 table.classList.toggle('today-table', type === 'today');
                 table.classList.toggle('gauge-table', ['monthly', 'semester', 'subject'].includes(type));
@@ -3541,7 +3703,9 @@
         function updateTimetableDayNavigator(isoDate) {
             const dayName = getDayNameFromIso(isoDate);
             const dayLabel = document.getElementById('ttDayName');
+            const todayBadge = document.getElementById('ttTodayBadge');
             if (dayLabel) dayLabel.textContent = dayName === 'Sunday' ? 'Monday' : dayName;
+            if (todayBadge) todayBadge.hidden = isoDate !== getTodayIsoDate();
         }
 
         function timePartToMinutes(hourText, minuteText, periodText = '') {
@@ -3586,8 +3750,8 @@
             return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
         }
 
-        function formatTimetableTimeSlot(timeSlot) {
-            const range = parseTimetableTimeRange(timeSlot);
+        function formatTimetableTimeSlot(timeSlot, normalizedRange = null) {
+            const range = normalizedRange || parseTimetableTimeRange(timeSlot);
             if (range) return `${formatTimetableMinute(range.start)} – ${formatTimetableMinute(range.end)}`;
             return String(timeSlot || 'Time unavailable')
                 .replace(/\(P\d+\)/gi, '')
@@ -3608,40 +3772,109 @@
             return match ? match[1].toUpperCase() : '';
         }
 
-        function buildTimetableTimeline(rows) {
+        const TIMETABLE_WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        function getTimetableRowsForDay(timetable, day) {
+            const byDayRows = Array.isArray(timetable?.byDay?.[day]) ? timetable.byDay[day] : [];
+            const fallbackRows = Array.isArray(timetable?.allRows)
+                ? timetable.allRows.filter(row => String(row.day || '').toLowerCase() === day.toLowerCase())
+                : [];
+            const rows = byDayRows.length ? byDayRows : fallbackRows;
+            return [...rows].filter(row => String(row.day || day).toLowerCase() !== 'sunday').sort((a, b) => {
+                const ar = parseTimetableTimeRange(a.timeSlot);
+                const br = parseTimetableTimeRange(b.timeSlot);
+                return ar && br ? ar.start - br.start : ar ? -1 : br ? 1 : 0;
+            });
+        }
+
+        function getNormalizedTimetableRanges(rows) {
+            let previousRange = null;
+            return rows.map(row => {
+                let range = parseTimetableTimeRange(row.timeSlot);
+                if (range && previousRange && range.start === previousRange.end + 1) {
+                    range = { ...range, start: range.start - 1 };
+                }
+                previousRange = range;
+                return { row, range };
+            });
+        }
+
+        function getWeeklyTimetableGapMap(timetable) {
+            const scheduledDays = TIMETABLE_WEEKDAYS
+                .map(day => ({ day, rows: getTimetableRowsForDay(timetable, day) }))
+                .filter(item => item.rows.length > 0);
+            const activeDayCount = scheduledDays.length;
+            const occurrences = new Map();
+
+            scheduledDays.forEach(({ day, rows }) => {
+                const normalized = getNormalizedTimetableRanges(rows);
+                for (let index = 1; index < normalized.length; index++) {
+                    const previous = normalized[index - 1].range;
+                    const current = normalized[index].range;
+                    if (!previous || !current || current.start <= previous.end) continue;
+                    const duration = current.start - previous.end - 1;
+                    if (duration < 5) continue;
+                    const start = previous.end + 1;
+                    const end = current.start - 1;
+                    const key = `${start}:${end}`;
+                    const entry = occurrences.get(key) || { start, end, duration, days: new Set() };
+                    entry.days.add(day);
+                    occurrences.set(key, entry);
+                }
+            });
+
+            const gapMap = new Map();
+            occurrences.forEach((entry, key) => {
+                const commonEveryDay = activeDayCount >= 2 && entry.days.size === activeDayCount;
+                let label = 'Library';
+                if (commonEveryDay && entry.duration >= 45 && entry.duration <= 55) label = 'Lunch Break';
+                else if (commonEveryDay && entry.duration >= 8 && entry.duration <= 12) label = 'Break';
+                gapMap.set(key, { ...entry, label, commonEveryDay });
+            });
+            return gapMap;
+        }
+
+        function buildTimetableTimeline(rows, weeklyGapMap = new Map()) {
             const timeline = [];
+            const normalized = getNormalizedTimetableRanges(rows);
             let periodNumber = 0;
-            for (let index = 0; index < rows.length; index++) {
-                const row = rows[index];
-                const range = parseTimetableTimeRange(row.timeSlot);
-                if (index > 0) {
-                    const previousRange = parseTimetableTimeRange(rows[index - 1].timeSlot);
-                    if (previousRange && range && range.start > previousRange.end) {
-                        const gap = range.start - previousRange.end;
-                        if (previousRange.end === (12 * 60 + 40) && range.start === (13 * 60 + 30)) {
-                            timeline.push({ kind: 'break', label: 'Lunch Break', duration: 50, start: previousRange.end, end: range.start });
-                        } else if (gap === 10) {
-                            timeline.push({ kind: 'break', label: 'Break', duration: 10, start: previousRange.end, end: range.start });
-                        }
+            for (let index = 0; index < normalized.length; index++) {
+                const { row, range } = normalized[index];
+                const previousRange = index > 0 ? normalized[index - 1].range : null;
+                if (previousRange && range && range.start > previousRange.end) {
+                    const duration = range.start - previousRange.end - 1;
+                    if (duration >= 5) {
+                        const start = previousRange.end + 1;
+                        const end = range.start - 1;
+                        const gapInfo = weeklyGapMap.get(`${start}:${end}`);
+                        const label = gapInfo?.label || 'Library';
+                        const gapClass = label === 'Lunch Break' ? 'lunch' : label === 'Library' ? 'library' : 'short';
+                        timeline.push({ kind: 'gap', label, duration, start, end, gapClass });
                     }
                 }
                 const explicitPeriod = extractTimetablePeriod(row);
                 periodNumber++;
-                timeline.push({ kind: 'class', row, period: explicitPeriod || `P${periodNumber}` });
+                timeline.push({ kind: 'class', row, range, period: explicitPeriod || `P${periodNumber}` });
             }
             return timeline;
         }
 
         function getTimetableClassStates(rows, isoDate) {
-            const states = rows.map(row => ({ row, range: parseTimetableTimeRange(row.timeSlot), status: '', progress: 0 }));
+            const states = getNormalizedTimetableRanges(rows).map(({ row, range }) => ({ row, range, status: '', progress: 0 }));
             if (isoDate !== getTodayIsoDate()) return states;
             const now = new Date();
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            let nextAssigned = false;
             states.forEach(state => {
                 if (!state.range) return;
-                if (currentMinutes >= state.range.start && currentMinutes < state.range.end) {
+                if (currentMinutes >= state.range.end) {
+                    state.status = 'done';
+                } else if (currentMinutes >= state.range.start && currentMinutes < state.range.end) {
                     state.status = 'current';
                     state.progress = Math.max(0, Math.min(100, ((currentMinutes - state.range.start) / (state.range.end - state.range.start)) * 100));
+                } else if (!nextAssigned && currentMinutes < state.range.start) {
+                    state.status = 'next';
+                    nextAssigned = true;
                 }
             });
             return states;
@@ -3670,14 +3903,15 @@
 
             const states = getTimetableClassStates(rows, isoDate);
             const stateByRow = new Map(rows.map((row, index) => [row, states[index]]));
-            const timeline = buildTimetableTimeline(rows);
+            const weeklyGapMap = getWeeklyTimetableGapMap(timetable);
+            const timeline = buildTimetableTimeline(rows, weeklyGapMap);
             const classRows = timeline.map(item => {
-                if (item.kind === 'break') {
+                if (item.kind === 'gap') {
                     const start = formatTimetableMinute(item.start);
                     const end = formatTimetableMinute(item.end);
-                    const breakClass = item.label === 'Lunch Break' ? ' lunch' : '';
+                    const breakClass = item.gapClass ? ` ${item.gapClass}` : '';
                     return `<div class="timetable-break${breakClass}" aria-label="${item.label}, ${item.duration} minutes">
-                        <span class="timetable-break-label">${item.label}</span>
+                        <span class="timetable-break-label">${escapeHtml(item.label)}</span>
                         <span class="timetable-break-time">${start} – ${end}</span>
                         <span class="timetable-break-duration">${item.duration} min</span>
                     </div>`;
@@ -3688,8 +3922,8 @@
                 const status = state.status;
                 const stateClass = status ? ` is-${status}` : '';
                 const progressStyle = status === 'current' ? ` style="--class-progress:${state.progress.toFixed(1)}%"` : '';
-                const badge = status === 'current' ? '<span class="timetable-status current">Now</span>' : '';
-                const timeLabel = formatTimetableTimeSlot(row.timeSlot);
+                const badge = status ? `<span class="timetable-status ${status}">${status === 'current' ? 'Now' : status === 'done' ? 'Done' : 'Next'}</span>` : '';
+                const timeLabel = formatTimetableTimeSlot(row.timeSlot, item.range);
                 const meta = [row.subjectCode, row.group].filter(Boolean).map(escapeHtml).join(' · ');
                 const detailBits = [
                     meta ? `<span><b>Code</b>${meta}</span>` : '',
@@ -3698,9 +3932,8 @@
                 ].filter(Boolean).join('');
                 const rowIndex = rows.indexOf(row);
                 const isCurrent = status === 'current' && isoDate === getTodayIsoDate();
-                const currentKey = `${isoDate}:${rowIndex}`;
-                const autoOpenCurrent = isCurrent && manuallyCollapsedCurrentTimetableClass !== currentKey;
-                const keepOpen = Array.isArray(options.preserveOpenIndices) && options.preserveOpenIndices.includes(rowIndex);
+                const autoOpenCurrent = isCurrent;
+                const keepOpen = !isCurrent && Array.isArray(options.preserveOpenIndices) && options.preserveOpenIndices.includes(rowIndex);
                 return `<details class="timetable-class${stateClass}" data-class-index="${rowIndex}"${progressStyle}${autoOpenCurrent || keepOpen ? ' open' : ''}>
                     <summary class="timetable-summary">
                         <span class="timetable-time-wrap"><span class="timetable-period-tag">${escapeHtml(item.period)}</span><span class="timetable-time">${escapeHtml(timeLabel)}</span>${badge}</span>
@@ -3713,13 +3946,7 @@
             container.innerHTML = `<section class="timetable-day"><div class="timetable-list">${classRows}</div></section>`;
             container.querySelectorAll('details.timetable-class').forEach(detail => {
                 detail.addEventListener('toggle', () => {
-                    if (!detail.open) {
-                        if (detail.classList.contains('is-current')) {
-                            manuallyCollapsedCurrentTimetableClass = `${currentTimetableDate}:${detail.dataset.classIndex}`;
-                        }
-                        return;
-                    }
-                    if (detail.classList.contains('is-current')) manuallyCollapsedCurrentTimetableClass = null;
+                    if (!detail.open) return;
                     container.querySelectorAll('details.timetable-class[open]').forEach(other => {
                         if (other !== detail) other.open = false;
                     });
