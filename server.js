@@ -30,7 +30,10 @@ const TIMETABLE_URL = `${BASE_URL}/Student/TimeTable`;
 const EXAM_RESULT_URL = `${BASE_URL}/Student/ExamResult`;
 const PORT = Number(process.env.PORT) || 3000;
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const KEEP_ALIVE_INTERVAL_MS = 100 * 1000;
+const AWAKE_USERS = ['26CSAIM197'];
 const sessions = new Map();
+const keepAliveTimers = new Map();
 const rateBuckets = new Map();
 
 function rateLimit(key, limit, windowMs) {
@@ -48,11 +51,83 @@ function createSessionId() {
     return crypto.randomBytes(32).toString('hex');
 }
 
+function stopSessionKeepAlive(sessionId) {
+    const timer = keepAliveTimers.get(sessionId);
+    if (timer) clearInterval(timer);
+    keepAliveTimers.delete(sessionId);
+}
+
+function destroySession(sessionId) {
+    if (!sessionId) return;
+    const session = sessions.get(sessionId);
+    if (session) {
+        session.closed = true;
+        session.loggedIn = false;
+        session.attFormHtml = null;
+        session.attMode = null;
+    }
+    stopSessionKeepAlive(sessionId);
+    sessions.delete(sessionId);
+}
+
+function invalidateSession(sessionId, session) {
+    if (session) {
+        session.closed = true;
+        session.loggedIn = false;
+        session.attFormHtml = null;
+        session.attMode = null;
+    }
+    stopSessionKeepAlive(sessionId);
+    if (!session || sessions.get(sessionId) === session) sessions.delete(sessionId);
+}
+
+function runSessionOperation(session, operation) {
+    const previous = session.operationQueue || Promise.resolve();
+    const current = previous.catch(() => undefined).then(() => {
+        if (session.closed || !session.loggedIn) throw sessionExpiredError();
+        return operation();
+    });
+    session.operationQueue = current.then(() => undefined, () => undefined);
+    return current;
+}
+
+function startSessionKeepAlive(sessionId, session) {
+    stopSessionKeepAlive(sessionId);
+    if (!session.loggedIn || !AWAKE_USERS.includes(session.userId)) return;
+
+    const timer = setInterval(() => {
+        if (sessions.get(sessionId) !== session || !session.loggedIn) {
+            stopSessionKeepAlive(sessionId);
+            return;
+        }
+        if (session.keepAliveInFlight) return;
+        session.keepAliveInFlight = true;
+
+        runSessionOperation(session, async () => {
+            const html = await fetchPortalHtml(session, HOME_URL, HOME_URL);
+            if (isPortalLoginPage(html)) throw sessionExpiredError();
+            session.lastSeenAt = Date.now();
+            session.lastPortalCheckAt = Date.now();
+        }).catch(error => {
+            if (error.code === 'SESSION_EXPIRED') {
+                invalidateSession(sessionId, session);
+                console.warn(`[Session] Portal session expired for ${session.userId}; keep-alive stopped.`);
+            } else {
+                console.warn(`[Session] Keep-alive request failed for ${session.userId}: ${error.message}`);
+            }
+        }).finally(() => {
+            session.keepAliveInFlight = false;
+        });
+    }, KEEP_ALIVE_INTERVAL_MS);
+    timer.unref();
+    keepAliveTimers.set(sessionId, timer);
+}
+
 function getSession(sessionId, requireLogin = true) {
     if (typeof sessionId !== 'string' || !/^[a-f0-9]{64}$/i.test(sessionId)) return null;
     const session = sessions.get(sessionId);
-    if (!session || Date.now() - session.lastSeenAt > SESSION_TTL_MS) {
-        sessions.delete(sessionId);
+    if (!session || session.closed || Date.now() - session.lastSeenAt > SESSION_TTL_MS) {
+        destroySession(sessionId);
         return null;
     }
     if (requireLogin && !session.loggedIn) return null;
@@ -63,7 +138,7 @@ function getSession(sessionId, requireLogin = true) {
 setInterval(() => {
     const now = Date.now();
     for (const [id, session] of sessions) {
-        if (now - session.lastSeenAt > SESSION_TTL_MS) sessions.delete(id);
+        if (now - session.lastSeenAt > SESSION_TTL_MS) destroySession(id);
     }
     for (const [key, bucket] of rateBuckets) {
         if (now - bucket.startedAt > 60 * 60 * 1000) rateBuckets.delete(key);
@@ -206,7 +281,7 @@ async function fetchPortalHtml(session, url, referer = HOME_URL) {
     });
     session.cookies = mergeCookies(session.cookies, response.headers['set-cookie']);
     if (isPortalLoginPage(response.data)) {
-        session.loggedIn = false;
+        invalidateSession(session.sessionId, session);
         throw sessionExpiredError();
     }
     if (typeof response.data !== 'string') throw new Error('Unexpected portal response format');
@@ -257,7 +332,7 @@ async function submitPortalForm(session, url, html, options = {}) {
     });
     session.cookies = mergeCookies(session.cookies, response.headers['set-cookie']);
     if (isPortalLoginPage(response.data)) {
-        session.loggedIn = false;
+        invalidateSession(session.sessionId, session);
         throw sessionExpiredError();
     }
     if (typeof response.data !== 'string') throw new Error('Unexpected portal postback response');
@@ -398,7 +473,7 @@ app.get('/api/init-session', async (req, res) => {
         });
         cookies = mergeCookies(cookies, imgResponse.headers['set-cookie']);
         const sessionId = createSessionId();
-        sessions.set(sessionId, { cookies, hiddenInputs, captchaInputName, loggedIn: false, onboardingComplete: false, onboardingDismissed: false, createdAt: Date.now(), lastSeenAt: Date.now() });
+        sessions.set(sessionId, { sessionId, cookies, hiddenInputs, captchaInputName, loggedIn: false, closed: false, loginInFlight: false, userId: null, operationQueue: Promise.resolve(), onboardingComplete: false, onboardingDismissed: false, createdAt: Date.now(), lastSeenAt: Date.now() });
         res.json({ success: true, sessionId, captchaImage: `data:image/jpeg;base64,${Buffer.from(imgResponse.data).toString('base64')}` });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Session initialization failed' });
@@ -411,6 +486,9 @@ app.post('/api/login', async (req, res) => {
     const session = getSession(sessionId, false);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
     if (![userId, password, captcha].every(value => typeof value === 'string') || userId.length > 40 || password.length > 256 || captcha.length > 32) return res.status(400).json({ success: false, error: 'Invalid login input.' });
+    if (session.closed || session.loggedIn) return res.status(401).json({ success: false, error: 'This login session is no longer available. Refresh the captcha and try again.' });
+    if (session.loginInFlight) return res.status(409).json({ success: false, error: 'Login is already being processed.' });
+    session.loginInFlight = true;
 
     try {
         const payload = new URLSearchParams();
@@ -454,6 +532,9 @@ app.post('/api/login', async (req, res) => {
             return res.json({ success: false, error: message || 'Invalid credentials or captcha.' });
         }
 
+        if (session.closed || sessions.get(sessionId) !== session) {
+            return res.status(401).json({ success: false, error: 'This login session was closed. Refresh the captcha and try again.' });
+        }
         session.loggedIn = true;
         session.userId = String(userId).trim().toUpperCase();
         session.lastSeenAt = Date.now();
@@ -461,58 +542,70 @@ app.post('/api/login', async (req, res) => {
         session.attMode = null;
         session.onboardingComplete = false;
         session.onboardingDismissed = false;
+        startSessionKeepAlive(sessionId, session);
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: 'Login failed' });
+    } finally {
+        session.loginInFlight = false;
     }
 });
 
 app.post('/api/logout', (req, res) => {
     const { sessionId } = req.body || {};
-    if (sessionId && sessions.get(sessionId)) {
-        sessions.delete(sessionId);
-    }
+    destroySession(sessionId);
     res.json({ success: true });
 });
 
-app.get('/api/session/:sessionId', (req, res) => {
-    const session = getSession(req.params.sessionId);
+app.get('/api/session/:sessionId', async (req, res) => {
+    const sessionId = req.params.sessionId;
+    const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, loggedIn: false, error: 'Session expired' });
-    res.json({ success: true, loggedIn: true });
+    try {
+        await runSessionOperation(session, async () => {
+            await fetchPortalHtml(session, HOME_URL, LOGIN_URL);
+            session.lastPortalCheckAt = Date.now();
+        });
+        return res.json({ success: true, loggedIn: true });
+    } catch (error) {
+        if (error.code === 'SESSION_EXPIRED') {
+            invalidateSession(sessionId, session);
+            return res.status(401).json({ success: false, loggedIn: false, error: 'College portal session expired.' });
+        }
+        return res.status(503).json({ success: false, loggedIn: false, temporary: true, error: 'The college portal could not verify this session. Please sign in again.' });
+    }
 });
 
 app.get('/api/profile', async (req, res) => {
-    const session = getSession(req.query.sessionId);
+    const sessionId = req.query.sessionId;
+    const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
-    
+
     try {
-        const profileRes = await axios.get(PROFILE_URL, { 
-            headers: { Cookie: session.cookies, 'User-Agent': 'Mozilla/5.0' },
-            validateStatus: status => status >= 200 && status < 400
+        const html = await runSessionOperation(session, async () => {
+            const profileRes = await axios.get(PROFILE_URL, {
+                headers: portalHeaders(session, HOME_URL),
+                maxRedirects: 5,
+                validateStatus: status => status >= 200 && status < 400
+            });
+            session.cookies = mergeCookies(session.cookies, profileRes.headers['set-cookie']);
+            if (isPortalLoginPage(profileRes.data)) throw sessionExpiredError();
+            if (typeof profileRes.data !== 'string') throw new Error('Unexpected profile response format');
+            if (!session.profileLogged) {
+                const nameMatch = profileRes.data.match(/id="MCPH1_SCPH_lblName"[^>]*>([^<]*)</i);
+                const studentName = nameMatch ? cleanText(nameMatch[1]) : '';
+                console.log(`[Profile] UserID: ${session.userId} | Name: ${studentName}`);
+                session.profileLogged = true;
+            }
+            return profileRes.data;
         });
-        
-        if (profileRes.status !== 200) {
-            return res.status(profileRes.status).json({ success: false, error: 'Failed to access profile data from server.' });
-        }
-        if (isPortalLoginPage(profileRes.data)) {
-            session.loggedIn = false;
+        return res.json({ success: true, html });
+    } catch (error) {
+        if (error.code === 'SESSION_EXPIRED') {
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
-
-        if (!session.profileLogged) {
-            const nameMatch = String(profileRes.data).match(/id="MCPH1_SCPH_lblName"[^>]*>([^<]*)</i);
-            const studentName = nameMatch ? cleanText(nameMatch[1]) : '';
-            console.log(`[Profile] UserID: ${session.userId} | Name: ${studentName}`);
-            session.profileLogged = true;
-        }
-
-        res.json({ success: true, html: profileRes.data });
-    } catch (err) {
-        if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
-            return res.status(401).json({ success: false, error: 'College portal session expired.' });
-        }
-        res.status(502).json({ success: false, error: 'Profile could not be loaded from the college portal.' });
+        return res.status(502).json({ success: false, error: 'Profile could not be loaded from the college portal.' });
     }
 });
 
@@ -521,11 +614,11 @@ app.post('/api/timetable/weekly', async (req, res) => {
     const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
     try {
-        const result = await getTimetableByMode(session, 'weekly');
+        const result = await runSessionOperation(session, () => getTimetableByMode(session, 'weekly'));
         res.json({ success: true, mode: 'weekly', html: result.html });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: 'Weekly timetable could not be loaded from the college portal.' });
@@ -537,11 +630,11 @@ app.post('/api/timetable/today', async (req, res) => {
     const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
     try {
-        const result = await getTimetableByMode(session, 'today');
+        const result = await runSessionOperation(session, () => getTimetableByMode(session, 'today'));
         res.json({ success: true, mode: 'today', html: result.html });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: "Today's timetable could not be loaded from the college portal." });
@@ -553,11 +646,11 @@ app.get('/api/results/options', async (req, res) => {
     const session = getSession(req.query.sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
     try {
-        const options = await getResultOptions(session);
+        const options = await runSessionOperation(session, () => getResultOptions(session));
         res.json({ success: true, ...options });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(req.query.sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: 'Exam options could not be loaded from the college portal.' });
@@ -572,11 +665,11 @@ app.post('/api/results/options', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Invalid semester.' });
     }
     try {
-        const options = await getResultOptions(session, semester || '');
+        const options = await runSessionOperation(session, () => getResultOptions(session, semester || ''));
         res.json({ success: true, ...options });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: 'Examination options could not be loaded.' });
@@ -588,11 +681,11 @@ app.post('/api/results', async (req, res) => {
     const session = getSession(sessionId);
     if (!session) return res.status(401).json({ success: false, error: 'Session expired' });
     try {
-        const result = await getExamResult(session, semester, exam);
+        const result = await runSessionOperation(session, () => getExamResult(session, semester, exam));
         res.json({ success: true, result });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         const status = Number.isInteger(err.statusCode) ? err.statusCode : 502;
@@ -627,48 +720,33 @@ app.post('/api/attendance/datewise', async (req, res) => {
     }
 
     try {
-        if (!session.attFormHtml || session.attMode !== 'datewise' || !session.attFormHtml.includes('id="txtFrom"')) {
-            await executeAttendancePostback(
-                session,
-                'ctl00$ctl00$MCPH1$SCPH$btnDateWiseAtt',
-                'Date Wise'
-            );
-            session.attMode = 'datewise';
-        }
+        const html = await runSessionOperation(session, async () => {
+            if (!session.attFormHtml || session.attMode !== 'datewise' || !session.attFormHtml.includes('id="txtFrom"')) {
+                await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnDateWiseAtt', 'Date Wise');
+                session.attMode = 'datewise';
+            }
 
-        let html = await executeAttendancePostback(
-            session,
-            'ctl00$ctl00$MCPH1$SCPH$btnShowAtt',
-            'Show',
-            {
+            let pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnShowAtt', 'Show', {
                 'ctl00$ctl00$MCPH1$SCPH$txtFrom': formattedDate,
                 'ctl00$ctl00$MCPH1$SCPH$txtTo': formattedDate
-            }
-        );
+            });
 
-        if (typeof html === 'string' && /id="MCPH1_SCPH_DateWiseAtt"[^>]*display:\s*none/i.test(html)) {
-            await fetchAttendancePageHtml(session);
-            await executeAttendancePostback(
-                session,
-                'ctl00$ctl00$MCPH1$SCPH$btnDateWiseAtt',
-                'Date Wise'
-            );
-            session.attMode = 'datewise';
-            html = await executeAttendancePostback(
-                session,
-                'ctl00$ctl00$MCPH1$SCPH$btnShowAtt',
-                'Show',
-                {
+            if (typeof pageHtml === 'string' && /id="MCPH1_SCPH_DateWiseAtt"[^>]*display:\s*none/i.test(pageHtml)) {
+                await fetchAttendancePageHtml(session);
+                await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnDateWiseAtt', 'Date Wise');
+                session.attMode = 'datewise';
+                pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnShowAtt', 'Show', {
                     'ctl00$ctl00$MCPH1$SCPH$txtFrom': formattedDate,
                     'ctl00$ctl00$MCPH1$SCPH$txtTo': formattedDate
-                }
-            );
-        }
+                });
+            }
+            return pageHtml;
+        });
 
         res.json({ success: true, date: formattedDate, html });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: 'Date-wise attendance could not be loaded from the college portal.' });
@@ -691,35 +769,34 @@ app.post('/api/attendance/:type', async (req, res) => {
     }
 
     try {
-        let html = '';
-        if (type === 'today') {
-            html = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btntodayAtt', 'Today Attendance');
-            session.attMode = 'today';
-        } else if (type === 'monthly') {
-            html = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnMonthlyAtt', 'Monthly Attendance');
-            session.attMode = 'monthly';
-        } else if (type === 'semester') {
-            html = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnSemAtt', 'Semester Attendance');
-            session.attMode = 'semester';
-        } else if (type === 'subject') {
-            if (!session.attFormHtml || session.attMode !== 'subject' || !session.attFormHtml.includes('id="txtDFrom"')) {
-                await executeAttendancePostback(
-                    session,
-                    'ctl00$ctl00$MCPH1$SCPH$btnSubjectWiseAtt',
-                    'Subject Wise Attendance'
-                );
-                session.attMode = 'subject';
+        const html = await runSessionOperation(session, async () => {
+            let pageHtml = '';
+            if (type === 'today') {
+                pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btntodayAtt', 'Today Attendance');
+                session.attMode = 'today';
+            } else if (type === 'monthly') {
+                pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnMonthlyAtt', 'Monthly Attendance');
+                session.attMode = 'monthly';
+            } else if (type === 'semester') {
+                pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnSemAtt', 'Semester Attendance');
+                session.attMode = 'semester';
+            } else if (type === 'subject') {
+                if (!session.attFormHtml || session.attMode !== 'subject' || !session.attFormHtml.includes('id="txtDFrom"')) {
+                    await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnSubjectWiseAtt', 'Subject Wise Attendance');
+                    session.attMode = 'subject';
+                }
+                pageHtml = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnShowSubject', 'Show', {
+                    'ctl00$ctl00$MCPH1$SCPH$txtDFrom': formatDateForDotNet(fromDate),
+                    'ctl00$ctl00$MCPH1$SCPH$txtDTo': formatDateForDotNet(toDate)
+                });
             }
-            html = await executeAttendancePostback(session, 'ctl00$ctl00$MCPH1$SCPH$btnShowSubject', 'Show', {
-                'ctl00$ctl00$MCPH1$SCPH$txtDFrom': formatDateForDotNet(fromDate),
-                'ctl00$ctl00$MCPH1$SCPH$txtDTo': formatDateForDotNet(toDate)
-            });
-        }
+            return pageHtml;
+        });
 
         res.json({ success: true, html });
     } catch (err) {
         if (err.code === 'SESSION_EXPIRED') {
-            session.loggedIn = false;
+            invalidateSession(sessionId, session);
             return res.status(401).json({ success: false, error: 'College portal session expired.' });
         }
         res.status(502).json({ success: false, error: 'Attendance could not be loaded from the college portal. Please retry.' });
@@ -733,6 +810,7 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 });
 
 function shutdown() {
+    for (const id of keepAliveTimers.keys()) stopSessionKeepAlive(id);
     server.close(() => process.exit(0));
     setTimeout(() => process.exit(1), 10000).unref();
 }
