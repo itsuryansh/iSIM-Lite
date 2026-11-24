@@ -616,9 +616,9 @@
             }
             .att-tabs .att-btn {
                 width:100%; min-width:0; min-height:44px;
-                padding:8px 7px; white-space:normal;
+                padding:8px 5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
                 display:flex; align-items:center; justify-content:center;
-                line-height:1.15; font-size:11px; text-align:center;
+                line-height:1; font-size:clamp(9px,2.7vw,11px); text-align:center;
                 border-width:1px; border-radius:11px;
             }
         }
@@ -753,6 +753,78 @@
             .result-picker,.result-exam-option-group,.timetable-chevron { transition:none !important; }
         }
 
+
+        /* Consistent, lightweight motion and section-level loading feedback. */
+        :root { --ease-ui:cubic-bezier(.2,.75,.25,1); }
+        button,.card,.prof-item,.nav-tab,.att-btn,.date-nav-arrow,.tt-day-arrow,.theme-trigger-btn,.logout-btn,.stop-search-btn {
+            transition:color .18s ease,background-color .18s ease,border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+        }
+        button:focus-visible,[role=button]:focus-visible,summary:focus-visible {
+            outline:3px solid color-mix(in srgb,var(--primary) 38%,transparent); outline-offset:3px;
+        }
+        .view-section:not(.hidden) { animation:sectionEnter .22s var(--ease-ui) both; }
+        @keyframes sectionEnter { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
+        .brand.tour-replay-trigger { position:relative; cursor:pointer; }
+        .brand.tour-replay-trigger::after {
+            content:attr(data-tour-hint); position:absolute; left:0; top:calc(100% + 10px); z-index:500;
+            width:max-content; max-width:240px; padding:7px 10px; border:1px solid rgba(148,163,184,.25);
+            border-radius:9px; background:#1e293b; color:#fff; font-size:10px; font-weight:650; letter-spacing:0;
+            white-space:normal; line-height:1.35; box-shadow:0 8px 20px rgba(15,23,42,.14);
+            opacity:0; visibility:hidden; transform:translateY(-3px); pointer-events:none;
+            transition:opacity .18s ease,transform .18s ease,visibility .18s ease;
+        }
+        .brand.tour-replay-trigger:hover::after,.brand.tour-replay-trigger:focus-visible::after { opacity:1; visibility:visible; transform:translateY(0); }
+        .date-nav-arrow.is-stop { color:#dc2626; border-color:rgba(220,38,38,.42); background:transparent; box-shadow:none; }
+        .date-nav-arrow.is-stop:hover { background:rgba(220,38,38,.06); border-color:#dc2626; }
+        body.dark-mode .date-nav-arrow.is-stop { color:#f87171; border-color:rgba(248,113,113,.45); background:transparent; }
+        .stop-search-btn {
+            display:inline-flex; align-items:center; justify-content:center; gap:8px; min-height:38px; margin-top:6px;
+            padding:8px 18px; border:1px solid rgba(220,38,38,.38); border-radius:999px;
+            background:transparent; color:#dc2626; font:750 12px var(--app-font),sans-serif;
+            white-space:nowrap; line-height:1; cursor:pointer; -webkit-tap-highlight-color:transparent;
+        }
+        .stop-search-btn:hover { background:rgba(220,38,38,.06); border-color:#dc2626; }
+        .stop-search-btn svg { width:14px; height:14px; }
+        body.dark-mode .stop-search-btn { color:#fca5a5; border-color:rgba(248,113,113,.4); }
+        .feature-message.loading { display:flex; align-items:center; justify-content:center; gap:9px; }
+        .feature-message.loading::before { content:''; width:14px; height:14px; flex:0 0 auto; border:2px solid rgba(79,70,229,.18); border-top-color:var(--primary); border-radius:50%; animation:spin .7s linear infinite; }
+        .option-skeleton { display:block; flex:0 0 auto; height:28px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
+        body.dark-mode .option-skeleton { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
+        .result-skeleton-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-top:14px; }
+        .result-skeleton-card { min-height:138px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; border:1px solid #e5eaf0; border-radius:13px; }
+        .result-skeleton-card span { width:70px; height:70px; border:8px solid #e8edf5; border-top-color:#c7d2fe; border-radius:50%; animation:spin 1.3s linear infinite; }
+        .result-skeleton-card i { width:65%; height:10px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
+        body.dark-mode .result-skeleton-card { border-color:#334155; }
+        body.dark-mode .result-skeleton-card span { border-color:#334155; border-top-color:var(--primary); }
+        body.dark-mode .result-skeleton-card i { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
+        .timetable-skeleton-list { display:grid; gap:8px; }
+        .timetable-skeleton-row { display:grid; grid-template-columns:88px minmax(0,1fr) 18px; align-items:center; gap:12px; min-height:58px; padding:10px 13px; border:1px solid #e5eaf0; border-radius:12px; }
+        .timetable-skeleton-row span,.timetable-skeleton-row i,.timetable-skeleton-row b { display:block; height:11px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
+        .timetable-skeleton-row i { width:85%; }
+        .timetable-skeleton-row b { width:14px; height:14px; }
+        body.dark-mode .timetable-skeleton-row { border-color:#334155; }
+        body.dark-mode .timetable-skeleton-row span,body.dark-mode .timetable-skeleton-row i,body.dark-mode .timetable-skeleton-row b { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
+        .timetable-period-tag { display:inline-flex; align-items:center; justify-content:center; min-width:24px; padding:3px 5px; border-radius:6px; background:#eef2ff; color:var(--primary); font-size:9px; font-weight:900; line-height:1; }
+        body.dark-mode .timetable-period-tag { background:rgba(99,102,241,.18); }
+        .timetable-break { display:flex; align-items:center; justify-content:center; gap:9px; min-height:34px; padding:7px 11px; border:1px dashed #cbd5e1; border-radius:10px; background:rgba(148,163,184,.045); color:var(--text-muted); font-size:10px; font-weight:750; }
+        .timetable-break-label { color:var(--text-dark); font-weight:850; }
+        .timetable-break-time { font-variant-numeric:tabular-nums; }
+        .timetable-break-duration { color:var(--primary); font-weight:850; }
+        .timetable-break.lunch { border-style:solid; border-color:rgba(217,119,6,.3); background:rgba(245,158,11,.055); }
+        .timetable-break.lunch .timetable-break-label { color:#b45309; }
+        body.dark-mode .timetable-break { border-color:#475569; background:rgba(148,163,184,.04); }
+        body.dark-mode .timetable-break-label { color:#e2e8f0; }
+        body.dark-mode .timetable-break.lunch { border-color:rgba(251,191,36,.32); background:rgba(245,158,11,.07); }
+        body.dark-mode .timetable-break.lunch .timetable-break-label { color:#fbbf24; }
+        @media(max-width:540px) {
+            .timetable-break { gap:6px; flex-wrap:nowrap; font-size:9px; padding:7px 6px; }
+            .timetable-period-tag { min-width:21px; font-size:8px; }
+            .stop-search-btn { min-height:40px; padding:9px 20px; font-size:12px; }
+        }
+        @media(prefers-reduced-motion:reduce) {
+            *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; }
+        }
+
 </style>
 </head>
 <body>
@@ -801,7 +873,7 @@
 
     <div id="dashboard-view" class="hidden">
         <div class="top-nav">
-            <div class="brand tour-replay-trigger" id="brandTourTrigger" role="button" tabindex="0" title="Click to replay the feature tour" aria-label="Replay iSIM Lite feature tour" onclick="startOnboardingTour(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();startOnboardingTour(true);}">
+            <div class="brand tour-replay-trigger" id="brandTourTrigger" role="button" tabindex="0" title="Click the logo anytime to replay the feature tour" aria-label="Click the logo anytime to replay the feature tour" data-tour-hint="Click the logo anytime to replay the tour" onclick="startOnboardingTour(true)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();startOnboardingTour(true);}">
                 <img src="https://www.glbitm.org/Uploads/image/846imguf_LogoGLBajaj.jpg" alt="GL Bajaj">
                 <span class="hide-mobile">GLBAJAJ</span>
             </div>
@@ -921,9 +993,9 @@
                         <div id="attLoadingStatus" style="font-weight: 800; font-size: 17px; color: var(--primary);">Synchronizing Data...</div>
                         <div id="attLoadingDate" class="badge badge-default hidden" style="font-size: 13px; padding: 6px 14px;">Date: --/--/----</div>
                         <div id="attLoadingSub" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Please wait while we communicate with the server.</div>
-                        <button type="button" id="btnStopSearch" class="logout-btn hidden" onclick="stopAttendanceSearch()" style="margin-top: 6px; padding: 8px 20px; height: auto; border-radius: 100px;">
+                        <button type="button" id="btnStopSearch" class="stop-search-btn hidden" onclick="stopAttendanceSearch()">
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
-                            <span style="display: inline !important;">Stop Search</span>
+                            <span >Stop Search</span>
                         </button>
                     </div>
                     
@@ -1012,6 +1084,7 @@
         const BASE_PORTAL_URL = 'https://glb.servergi.com:8071/iSIMGLBMTR';
         const SESSION_STORAGE_KEY = 'glb_student_portal_session';
         const SUBJECT_DATES_STORAGE_KEY = 'glb_subject_attendance_dates_v1';
+        const TOUR_SEEN_STORAGE_KEY = 'glb_product_tour_seen_v1';
         const FONT_STORAGE_KEY = 'isim_lite_font_family_v1';
         const FONT_CHOICES = ['ADLaM Display', 'Outfit', 'DynaPuff', 'Figtree', 'Inter', 'Nunito', 'Poppins', 'Quicksand', 'Rubik'];
         let sessionId = localStorage.getItem(SESSION_STORAGE_KEY) || null;
@@ -1027,6 +1100,7 @@
         let captchaRequestId = 0;
         let currentView = 'view-attendance';
         let resultOptionsLoaded = false;
+        let isResultOptionsLoading = false;
         let resultRequestId = 0;
         let resultOptionsRequestId = 0;
         let resultSemesterOptions = [];
@@ -1038,12 +1112,17 @@
         let cachedWeeklyTimetableSessionId = null;
         let currentTimetableDate = isSundayIso(getTodayIsoDate()) ? stepDateSkippingSunday(getTodayIsoDate(), 1) : getTodayIsoDate();
         let timetableClockInterval = null;
+        let manuallyCollapsedCurrentTimetableClass = null;
         let isResultLoading = false;
         let onboardingVisible = false;
         let currentTourStep = 0;
         let tourActionStep = -1;
         let tourRenderToken = 0;
         let tourThemeSnapshot = null;
+        let sessionExpiryPromise = null;
+        let isLoggingOut = false;
+        const resultExamOptionsCache = new Map();
+        const resultDataCache = new Map();
 
         let currentSelectedDate = getTodayIsoDate();
         let searchInFlight = false;
@@ -1082,6 +1161,91 @@
         ];
 
         const defaultProfileSvg = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
+
+        async function apiFetch(url, options = {}, config = {}) {
+            const requestedSessionId = config.sessionId || sessionId;
+            const response = await fetch(url, options);
+            if (response.status === 401 && !isLoggingOut && config.handleUnauthorized !== false && requestedSessionId && requestedSessionId === sessionId) {
+                await handleSessionExpired();
+            }
+            return response;
+        }
+
+        async function handleSessionExpired(message = 'Your college portal session expired. Please sign in again to continue.') {
+            if (!sessionId || isLoggingOut) return;
+            if (sessionExpiryPromise) return sessionExpiryPromise;
+
+            sessionExpiryPromise = (async () => {
+                const oldSessionId = sessionId;
+                if (searchInFlight) stopAttendanceSearch();
+                tourRenderToken++;
+                onboardingVisible = false;
+                document.getElementById('tourOverlay')?.classList.remove('active');
+                document.getElementById('tourPopover')?.classList.remove('active');
+                document.querySelectorAll('.tour-highlight-target').forEach(element => element.classList.remove('tour-highlight-target'));
+                document.querySelector('.top-nav')?.classList.remove('tour-elevated');
+
+                clearWeeklyTimetableCache(oldSessionId);
+                localStorage.removeItem(SESSION_STORAGE_KEY);
+                sessionId = null;
+                profileLoaded = false;
+                attendanceLoaded = false;
+                attendanceLoadedType = null;
+                resultOptionsLoaded = false;
+                isResultOptionsLoading = false;
+                resultOptionsRequestId++;
+                resultRequestId++;
+                timetableRequestId++;
+                attendanceRequestId++;
+                profileRequestId++;
+                captchaRequestId++;
+                try {
+                    await fetch(`${API_BASE}/logout`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionId: oldSessionId })
+                    });
+                } catch (_) {}
+                resultExamOptionsCache.clear();
+                resultDataCache.clear();
+                dateAttendanceCache.clear();
+                cachedWeeklyTimetable = null;
+                cachedWeeklyTimetableSessionId = null;
+                weeklyTimetablePromise = null;
+                isResultLoading = false;
+                searchInFlight = false;
+                searchDirection = 0;
+                currentProfilePhoto = null;
+                if (timetableClockInterval) {
+                    clearInterval(timetableClockInterval);
+                    timetableClockInterval = null;
+                }
+
+                const topAvatar = document.getElementById('topNavAvatar');
+                if (topAvatar) topAvatar.innerHTML = defaultProfileSvg;
+                const topName = document.getElementById('topNavName');
+                const topAdm = document.getElementById('topNavAdm');
+                if (topName) topName.textContent = 'Student';
+                if (topAdm) topAdm.textContent = '-';
+                document.getElementById('resultContent')?.classList.add('hidden');
+                document.getElementById('timetableContent')?.replaceChildren();
+                document.getElementById('attLoading')?.classList.add('hidden');
+                document.getElementById('attTableContainer')?.classList.remove('hidden');
+                document.getElementById('pageOverlay')?.classList.remove('active');
+
+                showLoginView();
+                setPageRoute('login', true);
+                const savedUserId = localStorage.getItem('isim_lite_user_id');
+                if (savedUserId && !document.getElementById('admNumber').value) {
+                    document.getElementById('admNumber').value = savedUserId;
+                }
+                await initSession();
+                setLoginError(message);
+            })().finally(() => {
+                sessionExpiryPromise = null;
+            });
+            return sessionExpiryPromise;
+        }
 
         function getTodayIsoDate() {
             const now = new Date();
@@ -1307,42 +1471,28 @@
             const stopIcon = `<svg fill="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>`;
 
             if (prevBtn) {
-                if (searchInFlight && searchDirection < 0) {
-                    prevBtn.disabled = false;
-                    prevBtn.style.opacity = '1';
-                    prevBtn.style.cursor = 'pointer';
-                    prevBtn.style.background = '#ef4444';
-                    prevBtn.innerHTML = stopIcon;
-                    prevBtn.title = 'Stop Search';
-                } else {
-                    prevBtn.disabled = searchInFlight;
-                    prevBtn.style.opacity = searchInFlight ? '0.5' : '1';
-                    prevBtn.style.cursor = searchInFlight ? 'not-allowed' : 'pointer';
-                    prevBtn.style.background = '';
-                    prevBtn.innerHTML = prevIcon;
-                    prevBtn.title = 'Previous Date with Attendance';
-                }
+                const isStop = searchInFlight && searchDirection < 0;
+                prevBtn.disabled = searchInFlight && !isStop;
+                prevBtn.classList.toggle('is-stop', isStop);
+                prevBtn.style.opacity = searchInFlight && !isStop ? '0.5' : '1';
+                prevBtn.style.cursor = searchInFlight && !isStop ? 'not-allowed' : 'pointer';
+                prevBtn.innerHTML = isStop ? stopIcon : prevIcon;
+                prevBtn.title = isStop ? 'Stop Search' : 'Previous Date with Attendance';
+                prevBtn.setAttribute('aria-label', prevBtn.title);
             }
 
             const nextCandidate = stepDateSkippingSunday(currentSelectedDate, 1);
             const disableNext = currentSelectedDate >= todayIso || nextCandidate > todayIso;
             if (nextBtn) {
-                if (searchInFlight && searchDirection > 0) {
-                    nextBtn.disabled = false;
-                    nextBtn.style.opacity = '1';
-                    nextBtn.style.cursor = 'pointer';
-                    nextBtn.style.background = '#ef4444';
-                    nextBtn.innerHTML = stopIcon;
-                    nextBtn.title = 'Stop Search';
-                } else {
-                    const isLocked = searchInFlight || disableNext;
-                    nextBtn.disabled = isLocked;
-                    nextBtn.style.opacity = isLocked ? '0.5' : '1';
-                    nextBtn.style.cursor = isLocked ? 'not-allowed' : 'pointer';
-                    nextBtn.style.background = '';
-                    nextBtn.innerHTML = nextIcon;
-                    nextBtn.title = 'Next Date with Attendance';
-                }
+                const isStop = searchInFlight && searchDirection > 0;
+                const isLocked = searchInFlight || disableNext;
+                nextBtn.disabled = isLocked && !isStop;
+                nextBtn.classList.toggle('is-stop', isStop);
+                nextBtn.style.opacity = isLocked && !isStop ? '0.5' : '1';
+                nextBtn.style.cursor = isLocked && !isStop ? 'not-allowed' : 'pointer';
+                nextBtn.innerHTML = isStop ? stopIcon : nextIcon;
+                nextBtn.title = isStop ? 'Stop Search' : 'Next Date with Attendance';
+                nextBtn.setAttribute('aria-label', nextBtn.title);
             }
         }
 
@@ -1786,7 +1936,7 @@
                 activeSearchAbortController = controller;
                 const timer = setTimeout(() => controller.abort(), timeoutMs);
                 try {
-                    const res = await fetch(url, { ...options, signal: controller.signal });
+                    const res = await apiFetch(url, { ...options, signal: controller.signal });
                     clearTimeout(timer);
                     if (activeSearchAbortController === controller) activeSearchAbortController = null;
                     return res;
@@ -1965,7 +2115,8 @@
             } catch (err) {
                 if (requestId !== attendanceRequestId) return;
                 if (err.code === 'SESSION_EXPIRED') {
-                    return showSessionExpiredUI(document.getElementById('attTbody'), true);
+                    await handleSessionExpired();
+                    return;
                 }
                 document.getElementById('attLoading').classList.add('hidden');
                 document.getElementById('attTableContainer').classList.remove('hidden');
@@ -2090,7 +2241,8 @@
                 updateDateNavigationUI();
                 if (requestId !== attendanceRequestId) return;
                 if (err.code === 'SESSION_EXPIRED') {
-                    return showSessionExpiredUI(document.getElementById('attTbody'), true);
+                    await handleSessionExpired();
+                    return;
                 }
                 document.getElementById('attLoading').classList.add('hidden');
                 document.getElementById('attTableContainer').classList.remove('hidden');
@@ -2207,24 +2359,8 @@
             statusHoldTimer = null;
         }));
 
-        function showSessionExpiredUI(containerElement, isTable = false) {
-            const expiredHTML = `
-                <div class="session-expired-state">
-                    <h3>Session Expired</h3>
-                    <p>Your secure session has ended. Please log in again to continue.</p>
-                    <button class="btn-modern" style="width:auto; padding:12px 28px;" onclick="logoutPortal()">Login Again</button>
-                </div>
-            `;
-            if(isTable) {
-                document.getElementById('attThead').innerHTML = '';
-                containerElement.innerHTML = `<tr><td colspan="3">${expiredHTML}</td></tr>`;
-                document.getElementById('attTableContainer').classList.remove('hidden');
-                document.getElementById('attLoading').classList.add('hidden');
-                document.getElementById('todaySummaryBox').classList.add('hidden');
-            } else {
-                containerElement.innerHTML = expiredHTML;
-                pageOverlay.classList.remove('active');
-            }
+        function showSessionExpiredUI() {
+            handleSessionExpired();
         }
 
         function routeUrl(route) {
@@ -2329,18 +2465,37 @@
         }
 
         async function logoutPortal() {
+            if (sessionExpiryPromise) {
+                await sessionExpiryPromise;
+                return;
+            }
+            if (isLoggingOut) return;
+            isLoggingOut = true;
+            const sessionToLogout = sessionId;
+
             if (searchInFlight) stopAttendanceSearch();
-            clearWeeklyTimetableCache(sessionId);
-            if (sessionId) {
+            attendanceRequestId++;
+            profileRequestId++;
+            resultOptionsRequestId++;
+            resultRequestId++;
+            timetableRequestId++;
+            captchaRequestId++;
+
+            clearWeeklyTimetableCache(sessionToLogout);
+            if (timetableClockInterval) {
+                clearInterval(timetableClockInterval);
+                timetableClockInterval = null;
+            }
+            if (sessionToLogout) {
                 try {
                     await fetch(`${API_BASE}/logout`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId })
+                        body: JSON.stringify({ sessionId: sessionToLogout })
                     });
-                } catch(e) {}
+                } catch (_) {}
             }
-            
+
             localStorage.removeItem(SESSION_STORAGE_KEY);
             sessionId = null;
             profileLoaded = false;
@@ -2350,22 +2505,30 @@
             cachedWeeklyTimetableSessionId = null;
             weeklyTimetablePromise = null;
             resultOptionsLoaded = false;
-            resultOptionsRequestId++;
-            resultRequestId++;
-            timetableRequestId++;
+            isResultOptionsLoading = false;
+            resultExamOptionsCache.clear();
+            resultDataCache.clear();
             dateAttendanceCache.clear();
             searchInFlight = false;
             searchDirection = 0;
-            profileRequestId++;
-            attendanceRequestId++;
             currentProfilePhoto = null;
-            
+            document.getElementById('resultContent')?.classList.add('hidden');
+            document.getElementById('timetableContent')?.replaceChildren();
+
             const topAvatar = document.getElementById('topNavAvatar');
             if (topAvatar) topAvatar.innerHTML = defaultProfileSvg;
-            
+            const topName = document.getElementById('topNavName');
+            const topAdm = document.getElementById('topNavAdm');
+            if (topName) topName.textContent = 'Student';
+            if (topAdm) topAdm.textContent = '-';
+
             showLoginView();
             setPageRoute('login');
-            initSession();
+            try {
+                await initSession();
+            } finally {
+                isLoggingOut = false;
+            }
         }
 
         async function initSession(forceReload = false) {
@@ -2445,47 +2608,34 @@
                 return;
             }
 
-            const pageOverlay = document.getElementById('pageOverlay');
-            const loaderText = document.getElementById('loaderText');
-            const loginView = document.getElementById('login-view');
-            
             pageOverlay.classList.add('active');
-            loaderText.innerText = "Restoring secure session...";
-            loginView.style.opacity = '0';
+            loaderText.innerText = 'Restoring secure session…';
+            document.getElementById('login-view').style.opacity = '0';
 
             try {
                 const res = await fetch(`${API_BASE}/session/${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
                 const data = await res.json();
-                
-                if (!res.ok || !data.success || !data.loggedIn) {
-                    throw new Error('SESSION_EXPIRED');
+                if (res.status === 503 || data.temporary) {
+                    await handleSessionExpired('Your saved session could not be verified. Please sign in again when the connection is available.');
+                    return;
                 }
-                
+                if (res.status === 401 || !res.ok || !data.success || !data.loggedIn) {
+                    await handleSessionExpired('Your college portal session expired. Please sign in again to continue.');
+                    return;
+                }
+
                 if (routeFromUrl() !== 'profile') fetchProfile(true);
-                
                 applyRouteFromLocation();
-                
-            } catch (error) {
-                if (error.message === 'SESSION_EXPIRED') {
-                    clearWeeklyTimetableCache(sessionId);
-                    localStorage.removeItem(SESSION_STORAGE_KEY);
-                    sessionId = null;
-                    currentProfilePhoto = null;
-                    
-                    const topAvatar = document.getElementById('topNavAvatar');
-                    if (topAvatar) topAvatar.innerHTML = defaultProfileSvg;
-                    
-                    applyRouteFromLocation();
-                    initSession();
-                } else {
-                    applyRouteFromLocation();
-                }
+            } catch (_) {
+                await handleSessionExpired('Your saved session could not be verified. Please sign in again.');
             } finally {
                 pageOverlay.classList.remove('active');
-                loginView.style.opacity = '1';
+                document.getElementById('login-view').style.opacity = '1';
             }
         }
 
+        const savedAdmissionNumber = localStorage.getItem('isim_lite_user_id');
+        if (savedAdmissionNumber) document.getElementById('admNumber').value = savedAdmissionNumber;
         const storedSubjectDates = readSubjectDates();
         const initialUrlParams = new URLSearchParams(location.search);
         const urlFrom = initialUrlParams.get('from') || '';
@@ -2527,6 +2677,9 @@
                     weeklyTimetablePromise = null;
                     currentTimetableDate = getTodayIsoDate();
                     resultOptionsLoaded = false;
+                    isResultOptionsLoading = false;
+                    resultExamOptionsCache.clear();
+                    resultDataCache.clear();
                     resultOptionsRequestId++;
                     resultRequestId++;
                     timetableRequestId++;
@@ -2572,9 +2725,9 @@
             }
             
             try {
-                const res = await fetch(`${API_BASE}/profile?sessionId=${sessionId}`);
+                const res = await apiFetch(`${API_BASE}/profile?sessionId=${encodeURIComponent(sessionId)}`);
                 
-                if (res.status === 401) return showSessionExpiredUI(document.getElementById('dynamicProfileContainer'));
+                if (res.status === 401) return;
                 const data = await res.json();
                 if (requestId !== profileRequestId) return;
                 
@@ -2768,12 +2921,12 @@
             setLoadingProgress('Synchronizing Data...', null, 'Fetching attendance analytics from portal...');
 
             try {
-                const res = await fetch(`${API_BASE}/attendance/${type}`, {
+                const res = await apiFetch(`${API_BASE}/attendance/${type}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId, fromDate, toDate })
                 });
                 
-                if (res.status === 401) return showSessionExpiredUI(document.getElementById('attTbody'), true);
+                if (res.status === 401) return;
                 if (!res.ok && res.status !== 400) throw new Error(`Request failed (${res.status})`);
 
                 const response = await res.json();
@@ -2964,6 +3117,7 @@
             if (!element) return;
             element.textContent = message || '';
             element.classList.toggle('error', Boolean(isError));
+            element.classList.toggle('loading', Boolean(message) && !isError && /loading|fetching|synchronizing/i.test(message));
             element.classList.toggle('hidden', !message);
         }
 
@@ -2988,10 +3142,33 @@
             rail.classList.add('has-selection');
         }
 
+        function renderOptionRailSkeleton(rail, count = 3) {
+            if (!rail) return;
+            rail.setAttribute('aria-busy', 'true');
+            rail.classList.add('is-loading');
+            rail.innerHTML = Array.from({ length: count }, (_, index) => `<span class="option-skeleton" style="width:${index === 0 ? 54 : 42 + (index % 2) * 14}px"></span>`).join('');
+        }
+
+        function renderResultContentSkeleton(container) {
+            if (!container) return;
+            container.innerHTML = `<div class="result-skeleton-grid" aria-hidden="true">${Array.from({ length: 4 }, () => '<div class="result-skeleton-card"><span></span><i></i></div>').join('')}</div>`;
+            container.classList.remove('hidden');
+            container.classList.add('is-loading');
+            container.setAttribute('aria-busy', 'true');
+        }
+
+        function clearResultLoadingState(container) {
+            if (!container) return;
+            container.classList.remove('is-loading');
+            container.setAttribute('aria-busy', 'false');
+        }
+
         function renderResultOptionRail(type, options, selectedValue = '') {
             const rail = document.getElementById(type === 'semester' ? 'resultSemesterOptions' : 'resultExamOptions');
             if (!rail) return;
             rail.innerHTML = '';
+            rail.classList.remove('is-loading');
+            rail.setAttribute('aria-busy', 'false');
             const indicator = document.createElement('span');
             indicator.className = 'option-indicator';
             indicator.setAttribute('aria-hidden', 'true');
@@ -3033,7 +3210,8 @@
         async function loadResultOptions() {
             const semesterRail = document.getElementById('resultSemesterOptions');
             const examRail = document.getElementById('resultExamOptions');
-            if (!sessionId || !semesterRail || !examRail) return;
+            if (!sessionId || !semesterRail || !examRail || resultOptionsLoaded || isResultOptionsLoading) return;
+            isResultOptionsLoading = true;
             resultOptionsLoaded = false;
             isResultLoading = false;
             document.getElementById('resultPicker')?.classList.remove('has-exam-options');
@@ -3043,7 +3221,7 @@
             resultSemesterOptions = [];
             resultExamOptions = [];
             updateResultActionState();
-            renderResultOptionRail('semester', [], '');
+            renderOptionRailSkeleton(semesterRail, 3);
             renderResultOptionRail('exam', [], '');
             examRail.classList.add('is-disabled');
             examRail.setAttribute('aria-disabled', 'true');
@@ -3051,13 +3229,10 @@
 
             const requestId = ++resultOptionsRequestId;
             try {
-                const response = await fetch(`${API_BASE}/results/options?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+                const response = await apiFetch(`${API_BASE}/results/options?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
                 const data = await response.json();
                 if (requestId !== resultOptionsRequestId) return;
-                if (response.status === 401) {
-                    document.getElementById('resultContent').classList.remove('hidden');
-                    return showSessionExpiredUI(document.getElementById('resultContent'));
-                }
+                if (response.status === 401) return;
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load semester options.');
                 resultSemesterOptions = Array.isArray(data.semesters) ? data.semesters : [];
                 renderResultOptionRail('semester', resultSemesterOptions, '');
@@ -3065,9 +3240,12 @@
                 setFeatureMessage('resultMessage', resultSemesterOptions.length ? '' : 'No semesters available.', !resultSemesterOptions.length);
             } catch (error) {
                 if (requestId === resultOptionsRequestId) {
+                    renderResultOptionRail('semester', [], '');
                     setFeatureMessage('resultMessage', error.message || 'Exam options could not be loaded.', true);
                     resultOptionsLoaded = false;
                 }
+            } finally {
+                if (requestId === resultOptionsRequestId) isResultOptionsLoading = false;
             }
         }
 
@@ -3085,25 +3263,35 @@
             const examRail = document.getElementById('resultExamOptions');
             examRail.classList.add('is-disabled');
             examRail.setAttribute('aria-disabled', 'true');
-            renderResultOptionRail('exam', [], '');
-            document.getElementById('resultContent').classList.add('hidden');
-            setFeatureMessage('resultMessage', 'Loading…');
+            const resultContainer = document.getElementById('resultContent');
+            resultContainer.classList.add('hidden');
+            const optionsCacheKey = `${sessionId}:${selectedResultSemester}`;
+            if (resultExamOptionsCache.has(optionsCacheKey)) {
+                resultExamOptions = resultExamOptionsCache.get(optionsCacheKey);
+                examRail.classList.remove('is-disabled');
+                examRail.setAttribute('aria-disabled', 'false');
+                renderResultOptionRail('exam', resultExamOptions, '');
+                document.getElementById('resultPicker')?.classList.toggle('has-exam-options', resultExamOptions.length > 0);
+                setFeatureMessage('resultMessage', resultExamOptions.length ? '' : 'No exams available.', !resultExamOptions.length);
+                return;
+            }
+
+            renderOptionRailSkeleton(examRail, 3);
+            setFeatureMessage('resultMessage', 'Loading examinations…');
 
             const requestId = ++resultOptionsRequestId;
             try {
-                const response = await fetch(`${API_BASE}/results/options`, {
+                const response = await apiFetch(`${API_BASE}/results/options`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId, semester: selectedResultSemester })
                 });
-                const data = await response.json();
                 if (requestId !== resultOptionsRequestId) return;
-                if (response.status === 401) {
-                    document.getElementById('resultContent').classList.remove('hidden');
-                    return showSessionExpiredUI(document.getElementById('resultContent'));
-                }
+                if (response.status === 401) return;
+                const data = await response.json();
                 if (!response.ok || !data.success) throw new Error(data.error || 'Could not load examinations.');
                 resultExamOptions = Array.isArray(data.exams) ? data.exams : [];
+                resultExamOptionsCache.set(optionsCacheKey, resultExamOptions);
                 if (resultExamOptions.length) document.getElementById('resultPicker')?.classList.add('has-exam-options');
                 examRail.classList.remove('is-disabled');
                 examRail.setAttribute('aria-disabled', 'false');
@@ -3111,6 +3299,7 @@
                 setFeatureMessage('resultMessage', resultExamOptions.length ? '' : 'No exams available.', !resultExamOptions.length);
             } catch (error) {
                 if (requestId === resultOptionsRequestId) {
+                    renderResultOptionRail('exam', [], '');
                     setFeatureMessage('resultMessage', error.message || 'Examinations could not be loaded.', true);
                     examRail.classList.remove('is-disabled');
                     examRail.setAttribute('aria-disabled', 'false');
@@ -3120,7 +3309,9 @@
 
         function selectResultExam(value) {
             if (!value || !sessionId) return;
-            selectedResultExam = String(value);
+            const nextExam = String(value);
+            if (isResultLoading && nextExam === selectedResultExam) return;
+            selectedResultExam = nextExam;
             renderResultOptionRail('exam', resultExamOptions, selectedResultExam);
             document.getElementById('resultContent').classList.add('hidden');
             fetchExamResult();
@@ -3215,6 +3406,7 @@
             const container = document.getElementById('resultContent');
             const subjects = Array.isArray(result.subjects) ? result.subjects : [];
             if (!subjects.length) {
+                clearResultLoadingState(container);
                 container.innerHTML = `<div class="result-empty">${escapeHtml(result.message || 'No published marks available.')}</div>`;
                 container.classList.remove('hidden');
                 return;
@@ -3245,6 +3437,7 @@
             const totalPercent = completeTotal && totalMaximum > 0
                 ? ` · ${Math.round((totalObtained / totalMaximum) * 100)}%`
                 : '';
+            clearResultLoadingState(container);
             container.innerHTML = `<div class="result-subject-grid">${cards}</div>
                 <div class="result-total-summary" aria-label="Total marks summary">
                     <span>Total</span>
@@ -3260,30 +3453,43 @@
             if (!semester || !exam || !sessionId) return;
 
             const requestId = ++resultRequestId;
+            const requestedSessionId = sessionId;
+            const cacheKey = `${requestedSessionId}:${semester}:${exam}`;
+            if (resultDataCache.has(cacheKey)) {
+                isResultLoading = false;
+                clearResultLoadingState(container);
+                renderExamResult(resultDataCache.get(cacheKey));
+                setFeatureMessage('resultMessage', '');
+                return;
+            }
+
             isResultLoading = true;
-            container.classList.add('hidden');
-            setFeatureMessage('resultMessage', 'Loading…');
+            renderResultContentSkeleton(container);
+            setFeatureMessage('resultMessage', '');
             try {
-                const response = await fetch(`${API_BASE}/results`, {
+                const response = await apiFetch(`${API_BASE}/results`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sessionId, semester, exam })
+                    body: JSON.stringify({ sessionId: requestedSessionId, semester, exam })
                 });
+                if (requestId !== resultRequestId || requestedSessionId !== sessionId) return;
+                if (response.status === 401) return;
                 const data = await response.json();
-                if (requestId !== resultRequestId) return;
-                if (response.status === 401) {
-                    container.classList.remove('hidden');
-                    return showSessionExpiredUI(container);
-                }
                 if (!response.ok || !data.success) throw new Error(data.error || 'Result unavailable.');
                 const resultPayload = data.result || data;
                 const parsedResult = resultPayload.html
                     ? parseExamResultHtmlOnFrontend(resultPayload.html, semester, exam)
                     : resultPayload;
+                resultDataCache.set(cacheKey, parsedResult);
+                clearResultLoadingState(container);
                 renderExamResult(parsedResult);
                 setFeatureMessage('resultMessage', '');
             } catch (error) {
-                if (requestId === resultRequestId) setFeatureMessage('resultMessage', error.message || 'Result unavailable.', true);
+                if (requestId === resultRequestId) {
+                    clearResultLoadingState(container);
+                    container.classList.add('hidden');
+                    setFeatureMessage('resultMessage', error.message || 'Result unavailable.', true);
+                }
             } finally {
                 if (requestId === resultRequestId) isResultLoading = false;
             }
@@ -3343,8 +3549,7 @@
             const minute = Number(minuteText);
             const period = String(periodText || '').toUpperCase();
             if (!Number.isFinite(hour) || !Number.isFinite(minute) || minute < 0 || minute > 59 || hour < 0 || hour > 23) return null;
-            if (period) {
-                if (hour < 1 || hour > 12) return null;
+            if (period && hour >= 1 && hour <= 12) {
                 if (period === 'PM' && hour !== 12) hour += 12;
                 if (period === 'AM' && hour === 12) hour = 0;
             }
@@ -3383,7 +3588,48 @@
 
         function formatTimetableTimeSlot(timeSlot) {
             const range = parseTimetableTimeRange(timeSlot);
-            return range ? `${formatTimetableMinute(range.start)} – ${formatTimetableMinute(range.end)}` : String(timeSlot || 'Time unavailable');
+            if (range) return `${formatTimetableMinute(range.start)} – ${formatTimetableMinute(range.end)}`;
+            return String(timeSlot || 'Time unavailable')
+                .replace(/\(P\d+\)/gi, '')
+                .replace(/(\d{1,2}):(\d{2})\s*(AM|PM)/gi, (_, h, m, suffix) => {
+                    let hour = Number(h);
+                    const period = suffix.toUpperCase();
+                    if (hour > 12 && hour <= 23) hour = hour % 12;
+                    if (hour === 0) hour = 12;
+                    return `${hour}:${m} ${period}`;
+                })
+                .replace(/\s*[-–—]\s*/g, ' – ')
+                .trim() || 'Time unavailable';
+        }
+
+        function extractTimetablePeriod(row) {
+            const source = `${row?.period || ''} ${row?.timeSlot || ''}`;
+            const match = source.match(/\b(P\d+)\b/i);
+            return match ? match[1].toUpperCase() : '';
+        }
+
+        function buildTimetableTimeline(rows) {
+            const timeline = [];
+            let periodNumber = 0;
+            for (let index = 0; index < rows.length; index++) {
+                const row = rows[index];
+                const range = parseTimetableTimeRange(row.timeSlot);
+                if (index > 0) {
+                    const previousRange = parseTimetableTimeRange(rows[index - 1].timeSlot);
+                    if (previousRange && range && range.start > previousRange.end) {
+                        const gap = range.start - previousRange.end;
+                        if (previousRange.end === (12 * 60 + 40) && range.start === (13 * 60 + 30)) {
+                            timeline.push({ kind: 'break', label: 'Lunch Break', duration: 50, start: previousRange.end, end: range.start });
+                        } else if (gap === 10) {
+                            timeline.push({ kind: 'break', label: 'Break', duration: 10, start: previousRange.end, end: range.start });
+                        }
+                    }
+                }
+                const explicitPeriod = extractTimetablePeriod(row);
+                periodNumber++;
+                timeline.push({ kind: 'class', row, period: explicitPeriod || `P${periodNumber}` });
+            }
+            return timeline;
         }
 
         function getTimetableClassStates(rows, isoDate) {
@@ -3391,19 +3637,13 @@
             if (isoDate !== getTodayIsoDate()) return states;
             const now = new Date();
             const currentMinutes = now.getHours() * 60 + now.getMinutes();
-            let nextIndex = -1;
-            states.forEach((state, index) => {
+            states.forEach(state => {
                 if (!state.range) return;
                 if (currentMinutes >= state.range.start && currentMinutes < state.range.end) {
                     state.status = 'current';
                     state.progress = Math.max(0, Math.min(100, ((currentMinutes - state.range.start) / (state.range.end - state.range.start)) * 100));
-                } else if (currentMinutes >= state.range.end) {
-                    state.status = 'done';
-                } else if (nextIndex === -1 || state.range.start < states[nextIndex].range.start) {
-                    nextIndex = index;
                 }
             });
-            if (nextIndex >= 0) states[nextIndex].status = 'next';
             return states;
         }
 
@@ -3429,15 +3669,26 @@
             }
 
             const states = getTimetableClassStates(rows, isoDate);
-            let focusIndex = states.findIndex(item => item.status === 'current');
-            if (focusIndex < 0) focusIndex = states.findIndex(item => item.status === 'next');
-            if (focusIndex < 0 && isoDate !== getTodayIsoDate()) focusIndex = 0;
-            const classRows = states.map((item, index) => {
+            const stateByRow = new Map(rows.map((row, index) => [row, states[index]]));
+            const timeline = buildTimetableTimeline(rows);
+            const classRows = timeline.map(item => {
+                if (item.kind === 'break') {
+                    const start = formatTimetableMinute(item.start);
+                    const end = formatTimetableMinute(item.end);
+                    const breakClass = item.label === 'Lunch Break' ? ' lunch' : '';
+                    return `<div class="timetable-break${breakClass}" aria-label="${item.label}, ${item.duration} minutes">
+                        <span class="timetable-break-label">${item.label}</span>
+                        <span class="timetable-break-time">${start} – ${end}</span>
+                        <span class="timetable-break-duration">${item.duration} min</span>
+                    </div>`;
+                }
+
                 const row = item.row;
-                const status = item.status;
+                const state = stateByRow.get(row) || { status: '', progress: 0 };
+                const status = state.status;
                 const stateClass = status ? ` is-${status}` : '';
-                const progressStyle = status === 'current' ? ` style="--class-progress:${item.progress.toFixed(1)}%"` : '';
-                const badge = status ? `<span class="timetable-status ${status}">${status === 'current' ? 'Now' : status === 'next' ? 'Next' : 'Done'}</span>` : '';
+                const progressStyle = status === 'current' ? ` style="--class-progress:${state.progress.toFixed(1)}%"` : '';
+                const badge = status === 'current' ? '<span class="timetable-status current">Now</span>' : '';
                 const timeLabel = formatTimetableTimeSlot(row.timeSlot);
                 const meta = [row.subjectCode, row.group].filter(Boolean).map(escapeHtml).join(' · ');
                 const detailBits = [
@@ -3445,9 +3696,14 @@
                     row.faculty ? `<span><b>Faculty</b>${escapeHtml(row.faculty)}</span>` : '',
                     row.hall ? `<span><b>Room</b>${escapeHtml(row.hall)}</span>` : ''
                 ].filter(Boolean).join('');
-                return `<details class="timetable-class${stateClass}" data-class-index="${index}"${progressStyle}${index === focusIndex ? ' open' : ''}>
+                const rowIndex = rows.indexOf(row);
+                const isCurrent = status === 'current' && isoDate === getTodayIsoDate();
+                const currentKey = `${isoDate}:${rowIndex}`;
+                const autoOpenCurrent = isCurrent && manuallyCollapsedCurrentTimetableClass !== currentKey;
+                const keepOpen = Array.isArray(options.preserveOpenIndices) && options.preserveOpenIndices.includes(rowIndex);
+                return `<details class="timetable-class${stateClass}" data-class-index="${rowIndex}"${progressStyle}${autoOpenCurrent || keepOpen ? ' open' : ''}>
                     <summary class="timetable-summary">
-                        <span class="timetable-time-wrap"><span class="timetable-time">${escapeHtml(timeLabel)}</span>${badge}</span>
+                        <span class="timetable-time-wrap"><span class="timetable-period-tag">${escapeHtml(item.period)}</span><span class="timetable-time">${escapeHtml(timeLabel)}</span>${badge}</span>
                         <span class="timetable-summary-subject">${escapeHtml(row.subject || 'Subject unavailable')}</span>
                         <svg class="timetable-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
                     </summary>
@@ -3457,18 +3713,27 @@
             container.innerHTML = `<section class="timetable-day"><div class="timetable-list">${classRows}</div></section>`;
             container.querySelectorAll('details.timetable-class').forEach(detail => {
                 detail.addEventListener('toggle', () => {
-                    if (!detail.open) return;
+                    if (!detail.open) {
+                        if (detail.classList.contains('is-current')) {
+                            manuallyCollapsedCurrentTimetableClass = `${currentTimetableDate}:${detail.dataset.classIndex}`;
+                        }
+                        return;
+                    }
+                    if (detail.classList.contains('is-current')) manuallyCollapsedCurrentTimetableClass = null;
                     container.querySelectorAll('details.timetable-class[open]').forEach(other => {
                         if (other !== detail) other.open = false;
                     });
                 });
             });
 
-            if (options.autoScroll !== false && isoDate === getTodayIsoDate() && focusIndex >= 0) {
-                requestAnimationFrame(() => {
-                    const target = container.querySelector(`[data-class-index="${focusIndex}"]`);
-                    target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                });
+            if (options.autoScroll !== false && isoDate === getTodayIsoDate()) {
+                const currentStateIndex = states.findIndex(item => item.status === 'current');
+                if (currentStateIndex >= 0) {
+                    requestAnimationFrame(() => {
+                        const target = container.querySelector(`[data-class-index="${currentStateIndex}"]`);
+                        target?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    });
+                }
             }
         }
 
@@ -3481,9 +3746,17 @@
                     return;
                 }
                 if (currentView === 'view-timetable' && currentTimetableDate === getTodayIsoDate() && cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) {
-                    renderTimetableDay(currentTimetableDate, cachedWeeklyTimetable, { autoScroll: false });
+                    const content = document.getElementById('timetableContent');
+                    const preserveOpenIndices = Array.from(content.querySelectorAll('details.timetable-class[open]'))
+                        .map(detail => Number(detail.dataset.classIndex))
+                        .filter(Number.isInteger);
+                    renderTimetableDay(currentTimetableDate, cachedWeeklyTimetable, { autoScroll: false, preserveOpenIndices });
                 }
             }, 60000);
+        }
+
+        function renderTimetableSkeleton(container) {
+            container.innerHTML = `<div class="timetable-skeleton-list" aria-hidden="true">${Array.from({ length: 4 }, () => '<div class="timetable-skeleton-row"><span></span><i></i><b></b></div>').join('')}</div>`;
         }
 
         async function loadTimetable() {
@@ -3491,16 +3764,25 @@
             if (isSundayIso(currentTimetableDate)) currentTimetableDate = stepDateSkippingSunday(currentTimetableDate, 1);
             const requestId = ++timetableRequestId;
             const content = document.getElementById('timetableContent');
-            content.innerHTML = '';
-            setFeatureMessage('timetableMessage', 'Loading…');
+            const cached = (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) ? cachedWeeklyTimetable : readWeeklyTimetableCache();
+            if (cached) {
+                renderTimetableDay(currentTimetableDate || getTodayIsoDate(), cached, { autoScroll: false });
+                setFeatureMessage('timetableMessage', '');
+            } else {
+                renderTimetableSkeleton(content);
+                setFeatureMessage('timetableMessage', 'Loading timetable…');
+            }
             try {
-                const timetable = await ensureWeeklyTimetableLoaded();
+                const timetable = cached || await ensureWeeklyTimetableLoaded();
                 if (requestId !== timetableRequestId || !sessionId) return;
-                renderTimetableDay(currentTimetableDate || getTodayIsoDate(), timetable);
+                renderTimetableDay(currentTimetableDate || getTodayIsoDate(), timetable, { autoScroll: !cached });
                 setFeatureMessage('timetableMessage', '');
                 startTimetableClock();
             } catch (error) {
-                if (requestId === timetableRequestId) setFeatureMessage('timetableMessage', error.message || 'Timetable unavailable.', true);
+                if (requestId === timetableRequestId) {
+                    content.innerHTML = '';
+                    setFeatureMessage('timetableMessage', error.message || 'Timetable unavailable.', true);
+                }
             }
         }
 
@@ -3633,18 +3915,30 @@
             }
         }
 
+        function tourSeenStorageKey() {
+            const userId = String(document.getElementById('admNumber')?.value || localStorage.getItem('isim_lite_user_id') || '').trim().toUpperCase();
+            const safeUserId = userId.replace(/[^A-Z0-9_-]/g, '').slice(0, 48);
+            return safeUserId ? `${TOUR_SEEN_STORAGE_KEY}_${safeUserId}` : TOUR_SEEN_STORAGE_KEY;
+        }
+
         async function checkOnboarding() {
-            if (!sessionId || onboardingVisible) return;
+            if (!sessionId || onboardingVisible || localStorage.getItem(tourSeenStorageKey()) === '1') return;
             try {
-                const response = await fetch(`${API_BASE}/onboarding?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+                const response = await apiFetch(`${API_BASE}/onboarding?sessionId=${encodeURIComponent(sessionId)}`, { cache: 'no-store' });
+                if (response.status === 401) return;
                 const data = await response.json();
-                if (!response.ok || !data.success || data.completed || data.dismissed) return;
+                if (!response.ok || !data.success) return;
+                if (data.completed || data.dismissed) {
+                    localStorage.setItem(tourSeenStorageKey(), '1');
+                    return;
+                }
                 startOnboardingTour(false);
             } catch (_) {}
         }
 
         function startOnboardingTour(force = true) {
             if (!sessionId || onboardingVisible) return;
+            localStorage.setItem(tourSeenStorageKey(), '1');
             tourThemeSnapshot = {
                 dark: document.body.classList.contains('dark-mode'),
                 darkStorage: localStorage.getItem(DARK_MODE_KEY),
@@ -3725,9 +4019,12 @@
         }
 
         async function saveOnboardingUpdate(payload) {
+            if (payload.completed || payload.dismissed) {
+                localStorage.setItem(tourSeenStorageKey(), '1');
+            }
             if (!sessionId) return;
             try {
-                await fetch(`${API_BASE}/onboarding`, {
+                await apiFetch(`${API_BASE}/onboarding`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ sessionId, completed: Boolean(payload.completed), dismissed: Boolean(payload.dismissed) })
