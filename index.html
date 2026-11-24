@@ -847,14 +847,11 @@
         body.dark-mode .auth-stage { border-color:#334155; color:#94a3b8; }
         body.dark-mode .auth-stage.active { color:#c7d2fe; background:rgba(79,70,229,.18); border-color:#6366f1; }
         body.dark-mode .auth-stage.complete { color:#6ee7b7; background:rgba(16,185,129,.12); border-color:#047857; }
-        .att-analytics-skeleton { display:grid; width:min(640px,100%); gap:10px; margin-top:4px; }
-        .att-skeleton-head,.att-skeleton-row { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(70px,.8fr) minmax(70px,.7fr); align-items:center; gap:12px; min-height:42px; padding:9px 12px; border:1px solid #e5eaf0; border-radius:10px; background:rgba(255,255,255,.55); }
-        .att-skeleton-head { min-height:34px; background:#f8fafc; }
-        .att-skeleton-head i,.att-skeleton-row i { display:block; height:10px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
-        .att-skeleton-head i:nth-child(2),.att-skeleton-row i:nth-child(2) { width:72%; justify-self:center; }
-        .att-skeleton-head i:nth-child(3),.att-skeleton-row i:nth-child(3) { width:58%; justify-self:end; }
-        body.dark-mode .att-skeleton-head,body.dark-mode .att-skeleton-row { background:#111827; border-color:#334155; }
-        body.dark-mode .att-skeleton-head i,body.dark-mode .att-skeleton-row i { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
+        .att-analytics-skeleton { display:block; width:min(640px,100%); margin-top:4px; }
+        .att-analytics-skeleton .result-skeleton-grid { width:100%; margin-top:0; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); }
+        .att-analytics-skeleton .result-skeleton-card { min-height:126px; }
+        @media(max-width:540px) { .att-analytics-skeleton .result-skeleton-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } }
+        body.dark-mode .att-analytics-skeleton .result-skeleton-card { border-color:#334155; }
         .view-section:not(.hidden) .card { animation:cardReveal .34s var(--ease-ui) both; }
         .view-section:not(.hidden) .feature-heading { animation:softReveal .28s ease both; }
         .view-section:not(.hidden) .filter-row:not(.hidden),.view-section:not(.hidden) .feature-filter-grid { animation:softReveal .3s var(--ease-ui) both; }
@@ -1075,13 +1072,7 @@
                             <svg fill="currentColor" viewBox="0 0 24 24" style="width:14px;height:14px;"><rect x="6" y="6" width="12" height="12" rx="2"></rect></svg>
                             <span>Stop Search</span>
                         </button>
-                        <div id="attAnalyticsSkeleton" class="att-analytics-skeleton hidden" aria-hidden="true">
-                            <div class="att-skeleton-head"><i></i><i></i><i></i></div>
-                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
-                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
-                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
-                            <div class="att-skeleton-row"><i></i><i></i><i></i></div>
-                        </div>
+                        <div id="attAnalyticsSkeleton" class="att-analytics-skeleton hidden" aria-hidden="true"></div>
                     </div>
                     
                     <div id="attTableContainer" class="table-responsive">
@@ -1654,7 +1645,13 @@
                 loadingBox.setAttribute('aria-busy', 'true');
             }
             if (spinner) spinner.classList.toggle('hidden', isAnalyticsLoad);
-            if (analyticsSkeleton) analyticsSkeleton.classList.toggle('hidden', !isAnalyticsLoad);
+            if (analyticsSkeleton) {
+                if (isAnalyticsLoad) {
+                    const count = readGaugeSkeletonCount(attendanceGaugeCountStorageKey(layoutType), 4);
+                    renderCircularGaugeSkeleton(analyticsSkeleton, count);
+                }
+                analyticsSkeleton.classList.toggle('hidden', !isAnalyticsLoad);
+            }
             const loadingSpinner = loadingBox?.querySelector(':scope > .spinner');
             if (loadingSpinner) loadingSpinner.classList.toggle('hidden', isAnalyticsLoad);
             const tableContainer = document.getElementById('attTableContainer');
@@ -3134,6 +3131,48 @@
             return '#ef4444'; 
         }
 
+        const GAUGE_COUNT_STORAGE_PREFIX = 'glb_gauge_count_v1';
+
+        function getGaugeStorageStudentKey() {
+            let studentId = '';
+            try { studentId = localStorage.getItem('isim_lite_user_id') || ''; } catch (_) {}
+            if (!studentId) studentId = document.getElementById('admNumber')?.value || 'student';
+            return String(studentId).trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '_').slice(0, 72) || 'student';
+        }
+
+        function makeGaugeCountStorageKey(scope, ...parts) {
+            const safeParts = parts.map(value => String(value ?? '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '_').slice(0, 48));
+            return `${GAUGE_COUNT_STORAGE_PREFIX}_${scope}_${getGaugeStorageStudentKey()}_${safeParts.join('_')}`;
+        }
+
+        function readGaugeSkeletonCount(storageKey, fallback = 4) {
+            try {
+                const saved = Number.parseInt(localStorage.getItem(storageKey) || '', 10);
+                if (Number.isInteger(saved) && saved > 0) return Math.max(1, Math.min(32, saved));
+            } catch (_) {}
+            return Math.max(1, Math.min(32, Number(fallback) || 4));
+        }
+
+        function saveGaugeSkeletonCount(storageKey, count) {
+            const safeCount = Math.max(1, Math.min(32, Math.floor(Number(count) || 0)));
+            if (!safeCount) return;
+            try { localStorage.setItem(storageKey, String(safeCount)); } catch (_) {}
+        }
+
+        function attendanceGaugeCountStorageKey(type) {
+            return makeGaugeCountStorageKey('attendance', type);
+        }
+
+        function resultGaugeCountStorageKey(semester = selectedResultSemester, exam = selectedResultExam) {
+            return makeGaugeCountStorageKey('result', semester || 'unknown_semester', exam || 'unknown_exam');
+        }
+
+        function renderCircularGaugeSkeleton(container, count) {
+            if (!container) return;
+            const safeCount = Math.max(1, Math.min(32, Number(count) || 4));
+            container.innerHTML = `<div class="result-skeleton-grid" aria-hidden="true">${Array.from({ length: safeCount }, () => '<div class="result-skeleton-card"><span></span><i></i></div>').join('')}</div>`;
+        }
+
         function renderAttendanceTable(type, data, dateLabel = null, isSunday = false) {
             const head = document.getElementById('attThead');
             const body = document.getElementById('attTbody');
@@ -3242,6 +3281,7 @@
 
             } else if (type === 'monthly' || type === 'semester' || type === 'subject') {
                 head.innerHTML = '';
+                saveGaugeSkeletonCount(attendanceGaugeCountStorageKey(type), data.length);
                 const gauges = data.map(r => {
                     const parsed = Number.parseFloat(r.value);
                     const num = Number.isFinite(parsed) ? Math.max(0, Math.min(100, parsed)) : 0;
@@ -3313,7 +3353,8 @@
 
         function renderResultContentSkeleton(container) {
             if (!container) return;
-            container.innerHTML = `<div class="result-skeleton-grid" aria-hidden="true">${Array.from({ length: 4 }, () => '<div class="result-skeleton-card"><span></span><i></i></div>').join('')}</div>`;
+            const count = readGaugeSkeletonCount(resultGaugeCountStorageKey(selectedResultSemester, selectedResultExam), 4);
+            renderCircularGaugeSkeleton(container, count);
             container.classList.remove('hidden');
             container.classList.add('is-loading');
             container.setAttribute('aria-busy', 'true');
@@ -3574,6 +3615,7 @@
                 return;
             }
 
+            saveGaugeSkeletonCount(resultGaugeCountStorageKey(selectedResultSemester, selectedResultExam), subjects.length);
             let totalObtained = 0;
             let obtainedCount = 0;
             let totalMaximum = 0;
@@ -3701,11 +3743,15 @@
         }
 
         function updateTimetableDayNavigator(isoDate) {
-            const dayName = getDayNameFromIso(isoDate);
+            const safeDate = isSundayIso(isoDate) ? stepDateSkippingSunday(isoDate, 1) : isoDate;
+            const dayName = getDayNameFromIso(safeDate);
+            const isToday = safeDate === getTodayIsoDate();
             const dayLabel = document.getElementById('ttDayName');
             const todayBadge = document.getElementById('ttTodayBadge');
-            if (dayLabel) dayLabel.textContent = dayName === 'Sunday' ? 'Monday' : dayName;
-            if (todayBadge) todayBadge.hidden = isoDate !== getTodayIsoDate();
+            const navigator = document.getElementById('ttDayNavigator');
+            if (dayLabel) dayLabel.textContent = dayName;
+            if (todayBadge) todayBadge.hidden = !isToday;
+            if (navigator) navigator.dataset.date = safeDate;
         }
 
         function timePartToMinutes(hourText, minuteText, periodText = '') {
@@ -3791,66 +3837,115 @@
             let previousRange = null;
             return rows.map(row => {
                 let range = parseTimetableTimeRange(row.timeSlot);
-                if (range && previousRange && range.start === previousRange.end + 1) {
-                    range = { ...range, start: range.start - 1 };
+                if (range) {
+                    range = { ...range };
+                    // The portal's next-period starts are one minute ahead of the
+                    // intended boundary. Remove that offset after every prior class,
+                    // whether the gap is zero, a short break, or lunch.
+                    if (previousRange && range.start > previousRange.end) {
+                        range.start = Math.max(previousRange.end, range.start - 1);
+                    }
                 }
                 previousRange = range;
                 return { row, range };
             });
         }
 
+        function getTimetableFreeIntervals(rows) {
+            const normalized = getNormalizedTimetableRanges(rows);
+            const intervals = [];
+            for (let index = 1; index < normalized.length; index++) {
+                const previous = normalized[index - 1].range;
+                const current = normalized[index].range;
+                if (!previous || !current || current.start <= previous.end) continue;
+                const duration = current.start - previous.end;
+                if (duration >= 5) intervals.push({ start: previous.end, end: current.start, duration });
+            }
+            return intervals;
+        }
+
+        function mergeTimetableIntervals(intervals) {
+            const sorted = [...intervals].filter(item => item && item.end > item.start)
+                .sort((a, b) => a.start - b.start || a.end - b.end);
+            const merged = [];
+            sorted.forEach(interval => {
+                const last = merged[merged.length - 1];
+                if (last && interval.start <= last.end) {
+                    last.end = Math.max(last.end, interval.end);
+                    last.duration = last.end - last.start;
+                } else {
+                    merged.push({ start: interval.start, end: interval.end, duration: interval.end - interval.start });
+                }
+            });
+            return merged;
+        }
+
+        function intersectTimetableIntervals(left, right) {
+            const intersections = [];
+            left.forEach(a => right.forEach(b => {
+                const start = Math.max(a.start, b.start);
+                const end = Math.min(a.end, b.end);
+                if (end - start >= 5) intersections.push({ start, end, duration: end - start });
+            }));
+            return mergeTimetableIntervals(intersections);
+        }
+
         function getWeeklyTimetableGapMap(timetable) {
             const scheduledDays = TIMETABLE_WEEKDAYS
                 .map(day => ({ day, rows: getTimetableRowsForDay(timetable, day) }))
                 .filter(item => item.rows.length > 0);
-            const activeDayCount = scheduledDays.length;
-            const occurrences = new Map();
 
-            scheduledDays.forEach(({ day, rows }) => {
-                const normalized = getNormalizedTimetableRanges(rows);
-                for (let index = 1; index < normalized.length; index++) {
-                    const previous = normalized[index - 1].range;
-                    const current = normalized[index].range;
-                    if (!previous || !current || current.start <= previous.end) continue;
-                    const duration = current.start - previous.end - 1;
-                    if (duration < 5) continue;
-                    const start = previous.end + 1;
-                    const end = current.start - 1;
-                    const key = `${start}:${end}`;
-                    const entry = occurrences.get(key) || { start, end, duration, days: new Set() };
-                    entry.days.add(day);
-                    occurrences.set(key, entry);
-                }
-            });
-
-            const gapMap = new Map();
-            occurrences.forEach((entry, key) => {
-                const commonEveryDay = activeDayCount >= 2 && entry.days.size === activeDayCount;
-                let label = 'Library';
-                if (commonEveryDay && entry.duration >= 45 && entry.duration <= 55) label = 'Lunch Break';
-                else if (commonEveryDay && entry.duration >= 8 && entry.duration <= 12) label = 'Break';
-                gapMap.set(key, { ...entry, label, commonEveryDay });
-            });
-            return gapMap;
+            if (!scheduledDays.length) return { commonIntervals: [] };
+            let commonIntervals = getTimetableFreeIntervals(scheduledDays[0].rows);
+            for (let index = 1; index < scheduledDays.length && commonIntervals.length; index++) {
+                commonIntervals = intersectTimetableIntervals(commonIntervals, getTimetableFreeIntervals(scheduledDays[index].rows));
+            }
+            return { commonIntervals: mergeTimetableIntervals(commonIntervals) };
         }
 
-        function buildTimetableTimeline(rows, weeklyGapMap = new Map()) {
+        function classifyTimetableGap(start, end, isShared = false) {
+            const duration = end - start;
+            if (isShared && duration >= 45 && duration <= 55) return { label: 'Lunch Break', gapClass: 'lunch' };
+            if (isShared && duration >= 8 && duration <= 12) return { label: 'Break', gapClass: 'short' };
+            return { label: 'Library', gapClass: 'library' };
+        }
+
+        function appendTimetableGapPieces(timeline, start, end, commonIntervals) {
+            if (end - start < 5) return;
+            const overlaps = commonIntervals
+                .map(interval => ({ start: Math.max(start, interval.start), end: Math.min(end, interval.end) }))
+                .filter(interval => interval.end - interval.start >= 5)
+                .sort((a, b) => a.start - b.start);
+
+            let cursor = start;
+            overlaps.forEach(interval => {
+                if (interval.start > cursor) {
+                    const part = classifyTimetableGap(cursor, interval.start, false);
+                    timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: cursor, end: interval.start, duration: interval.start - cursor });
+                }
+                const partStart = Math.max(cursor, interval.start);
+                if (interval.end > partStart) {
+                    const part = classifyTimetableGap(partStart, interval.end, true);
+                    timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: partStart, end: interval.end, duration: interval.end - partStart });
+                    cursor = interval.end;
+                }
+            });
+            if (end > cursor) {
+                const part = classifyTimetableGap(cursor, end, false);
+                timeline.push({ kind: 'gap', label: part.label, gapClass: part.gapClass, start: cursor, end, duration: end - cursor });
+            }
+        }
+
+        function buildTimetableTimeline(rows, weeklyGapMap = { commonIntervals: [] }) {
             const timeline = [];
             const normalized = getNormalizedTimetableRanges(rows);
+            const commonIntervals = Array.isArray(weeklyGapMap?.commonIntervals) ? weeklyGapMap.commonIntervals : [];
             let periodNumber = 0;
             for (let index = 0; index < normalized.length; index++) {
                 const { row, range } = normalized[index];
                 const previousRange = index > 0 ? normalized[index - 1].range : null;
                 if (previousRange && range && range.start > previousRange.end) {
-                    const duration = range.start - previousRange.end - 1;
-                    if (duration >= 5) {
-                        const start = previousRange.end + 1;
-                        const end = range.start - 1;
-                        const gapInfo = weeklyGapMap.get(`${start}:${end}`);
-                        const label = gapInfo?.label || 'Library';
-                        const gapClass = label === 'Lunch Break' ? 'lunch' : label === 'Library' ? 'library' : 'short';
-                        timeline.push({ kind: 'gap', label, duration, start, end, gapClass });
-                    }
+                    appendTimetableGapPieces(timeline, previousRange.end, range.start, commonIntervals);
                 }
                 const explicitPeriod = extractTimetablePeriod(row);
                 periodNumber++;
@@ -4014,10 +4109,12 @@
         }
 
         function shiftTimetableDay(direction) {
-            currentTimetableDate = stepDateSkippingSunday(currentTimetableDate || getTodayIsoDate(), Number(direction || 0) < 0 ? -1 : 1);
-            updateTimetableDayNavigator(currentTimetableDate);
+            const nextDate = stepDateSkippingSunday(currentTimetableDate || getTodayIsoDate(), Number(direction || 0) < 0 ? -1 : 1);
+            currentTimetableDate = nextDate;
+            updateTimetableDayNavigator(nextDate);
             if (cachedWeeklyTimetable && cachedWeeklyTimetableSessionId === sessionId) {
-                renderTimetableDay(currentTimetableDate, cachedWeeklyTimetable);
+                renderTimetableDay(nextDate, cachedWeeklyTimetable, { autoScroll: true });
+                if (nextDate === getTodayIsoDate()) startTimetableClock();
             } else {
                 loadTimetable();
             }
