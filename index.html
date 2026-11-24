@@ -791,7 +791,8 @@
         .option-skeleton { display:block; flex:0 0 auto; height:28px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
         body.dark-mode .option-skeleton { background:linear-gradient(90deg,#334155 20%,#475569 50%,#334155 80%); background-size:200% 100%; }
         .result-skeleton-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:12px; margin-top:14px; }
-        .result-skeleton-card { min-height:138px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; border:1px solid #e5eaf0; border-radius:13px; }
+        .loading-gauge-grid { width:100%; }
+        .result-skeleton-card { min-width:0; min-height:138px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:15px; border:1px solid #e5eaf0; border-radius:13px; }
         .result-skeleton-card span { width:70px; height:70px; border:8px solid #e8edf5; border-top-color:#c7d2fe; border-radius:50%; animation:spin 1.3s linear infinite; }
         .result-skeleton-card i { width:65%; height:10px; border-radius:8px; background:linear-gradient(90deg,#e8edf5 20%,#f8fafc 50%,#e8edf5 80%); background-size:200% 100%; animation:skeleton-loading 1.15s ease-in-out infinite; }
         body.dark-mode .result-skeleton-card { border-color:#334155; }
@@ -847,10 +848,11 @@
         body.dark-mode .auth-stage { border-color:#334155; color:#94a3b8; }
         body.dark-mode .auth-stage.active { color:#c7d2fe; background:rgba(79,70,229,.18); border-color:#6366f1; }
         body.dark-mode .auth-stage.complete { color:#6ee7b7; background:rgba(16,185,129,.12); border-color:#047857; }
-        .att-analytics-skeleton { display:block; width:min(640px,100%); margin-top:4px; }
-        .att-analytics-skeleton .result-skeleton-grid { width:100%; margin-top:0; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); }
+        /* Loading grid deliberately mirrors the final attendance gauge grid geometry. */
+        .att-analytics-skeleton { display:block; width:100%; margin-top:4px; }
+        .att-analytics-skeleton .attendance-gauge-grid { width:100%; margin-top:0; grid-template-columns:repeat(auto-fit,minmax(118px,1fr)); gap:22px 14px; }
         .att-analytics-skeleton .result-skeleton-card { min-height:126px; }
-        @media(max-width:540px) { .att-analytics-skeleton .result-skeleton-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; } }
+        @media(max-width:768px) { .att-analytics-skeleton .attendance-gauge-grid { grid-template-columns:repeat(auto-fit,minmax(105px,1fr)); gap:18px 8px; } }
         body.dark-mode .att-analytics-skeleton .result-skeleton-card { border-color:#334155; }
         .view-section:not(.hidden) .card { animation:cardReveal .34s var(--ease-ui) both; }
         .view-section:not(.hidden) .feature-heading { animation:softReveal .28s ease both; }
@@ -1648,7 +1650,7 @@
             if (analyticsSkeleton) {
                 if (isAnalyticsLoad) {
                     const count = readGaugeSkeletonCount(attendanceGaugeCountStorageKey(layoutType), 4);
-                    renderCircularGaugeSkeleton(analyticsSkeleton, count);
+                    renderCircularGaugeSkeleton(analyticsSkeleton, count, 'attendance');
                 }
                 analyticsSkeleton.classList.toggle('hidden', !isAnalyticsLoad);
             }
@@ -3167,10 +3169,11 @@
             return makeGaugeCountStorageKey('result', semester || 'unknown_semester', exam || 'unknown_exam');
         }
 
-        function renderCircularGaugeSkeleton(container, count) {
+        function renderCircularGaugeSkeleton(container, count, layout = 'result') {
             if (!container) return;
             const safeCount = Math.max(1, Math.min(32, Number(count) || 4));
-            container.innerHTML = `<div class="result-skeleton-grid" aria-hidden="true">${Array.from({ length: safeCount }, () => '<div class="result-skeleton-card"><span></span><i></i></div>').join('')}</div>`;
+            const gridClass = layout === 'attendance' ? 'attendance-gauge-grid' : 'result-subject-grid';
+            container.innerHTML = `<div class="${gridClass} loading-gauge-grid" aria-hidden="true">${Array.from({ length: safeCount }, () => '<div class="result-skeleton-card"><span></span><i></i></div>').join('')}</div>`;
         }
 
         function renderAttendanceTable(type, data, dateLabel = null, isSunday = false) {
@@ -3836,16 +3839,37 @@
         function getNormalizedTimetableRanges(rows) {
             let previousRange = null;
             return rows.map(row => {
-                let range = parseTimetableTimeRange(row.timeSlot);
-                if (range) {
-                    range = { ...range };
-                    // The portal's next-period starts are one minute ahead of the
-                    // intended boundary. Remove that offset after every prior class,
-                    // whether the gap is zero, a short break, or lunch.
-                    if (previousRange && range.start > previousRange.end) {
-                        range.start = Math.max(previousRange.end, range.start - 1);
+                const parsed = parseTimetableTimeRange(row.timeSlot);
+                if (!parsed) {
+                    previousRange = null;
+                    return { row, range: null };
+                }
+
+                let start = parsed.start;
+                let end = parsed.end;
+
+                if (previousRange) {
+                    const rawGap = start - previousRange.end;
+                    // Normalize the portal's occasional +/-1 minute drift to the
+                    // intended timetable rhythm: continuous periods, 10-minute
+                    // breaks, 50-minute lunch, or a 100-minute Library + Lunch span.
+                    const canonicalGaps = [0, 10, 50, 100];
+                    const canonicalGap = canonicalGaps.find(value => Math.abs(rawGap - value) <= 1);
+                    if (canonicalGap !== undefined) {
+                        start = previousRange.end + canonicalGap;
+                    } else if (rawGap > 1) {
+                        // For irregular/free periods preserve the gap, but remove
+                        // the portal's one-minute start offset when present.
+                        start = Math.max(previousRange.end, start - 1);
                     }
                 }
+
+                // Teaching periods in this timetable are 50 minutes. Correct
+                // 49/51-minute portal ranges without changing longer lab blocks.
+                const duration = end - start;
+                if (duration >= 49 && duration <= 51) end = start + 50;
+
+                const range = { start, end };
                 previousRange = range;
                 return { row, range };
             });
